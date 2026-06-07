@@ -117,7 +117,7 @@ const LoginPage: React.FC = () => {
         setAuthLoading(true);
         
         try {
-            // نحاول البحث عن المستخدم في قاعدة البيانات
+            // البحث عن المستخدم
             const { data: dbUser, error } = await supabase
                 .from('users')
                 .select('*')
@@ -147,10 +147,13 @@ const LoginPage: React.FC = () => {
                         salesRepId: dbUser.sales_rep_id,
                     };
                     
-                    // تحديث حالة الاتصال
                     await supabase.from('users').update({ online: true }).eq('id', appUser.id);
                     setCurrentUser(appUser);
                 }
+            } else if (usernameInput === 'admin') {
+                // إذا كان اسم المستخدم admin وغير موجود، نقوم بإنشائه تلقائياً كمدير
+                alert('جاري إعداد حساب المدير (admin) لأول مرة...');
+                await handleRegisterInternal('admin', 'admin', 'المدير العام', 'admin');
             } else {
                 alert('اسم المستخدم غير موجود. تأكد من كتابته بشكل صحيح أو قم بالتسجيل كمستخدم جديد.');
             }
@@ -159,6 +162,50 @@ const LoginPage: React.FC = () => {
             alert(`حدث خطأ أثناء تسجيل الدخول: ${err.message}`);
         } finally {
             setAuthLoading(false);
+        }
+    };
+
+    const handleRegisterInternal = async (username: string, nickname: string, name: string, role: UserRole) => {
+        try {
+            const newUserPayload = {
+                username: username,
+                name: name,
+                nickname: nickname,
+                role: role,
+                is_suspended: false,
+                is_muted: false,
+                can_edit_inventory: role === 'admin' || role === 'supervisor',
+                can_confirm_delivery: role === 'admin' || role === 'supervisor',
+                online: true,
+                start_date: new Date().toISOString(),
+            };
+
+            const { data, error } = await supabase.from('users').insert(newUserPayload).select().single();
+            if (error) throw error;
+
+            if (data && role === 'sales') {
+                await supabase.from('sales_reps').insert({
+                    user_id: data.id,
+                    name: data.name,
+                });
+            }
+
+            const appUser: User = {
+                id: data.id,
+                name: data.name,
+                nickname: data.nickname,
+                avatar: data.avatar_url,
+                username: data.username,
+                role: data.role,
+                isSuspended: data.is_suspended,
+                isMuted: data.is_muted ?? false,
+                canEditInventory: data.can_edit_inventory,
+                canConfirmDelivery: data.can_confirm_delivery,
+                online: true,
+            };
+            setCurrentUser(appUser);
+        } catch (err: any) {
+            alert(`فشلت عملية الإعداد: ${err.message}`);
         }
     };
 
@@ -171,7 +218,6 @@ const LoginPage: React.FC = () => {
         setAuthLoading(true);
 
         try {
-            // أولاً نتحقق إذا كان المستخدم موجوداً بالفعل
             const { data: existingUser } = await supabase
                 .from('users')
                 .select('id')
@@ -184,33 +230,9 @@ const LoginPage: React.FC = () => {
                 return;
             }
 
-            const newUserPayload = {
-                username: usernameInput,
-                name: usernameInput,
-                nickname: usernameInput,
-                role: 'sales' as UserRole,
-                is_suspended: false,
-                is_muted: false,
-                can_edit_inventory: false,
-                can_confirm_delivery: false,
-                online: false,
-                start_date: new Date().toISOString(),
-            };
-
-            const { data, error } = await supabase.from('users').insert(newUserPayload).select().single();
-
-            if (error) throw error;
-            
-            if (data && data.role === 'sales') {
-                const { error: repError } = await supabase.from('sales_reps').insert({
-                    user_id: data.id,
-                    name: data.name,
-                });
-                if (repError) throw repError;
-            }
-
-            alert(`تم تسجيل "${usernameInput}" بنجاح! يمكنك الآن الدخول.`);
-            setLoginUsername(usernameInput);
+            const role: UserRole = usernameInput === 'admin' ? 'admin' : 'sales';
+            await handleRegisterInternal(usernameInput, usernameInput, usernameInput, role);
+            alert(`تم تسجيل "${usernameInput}" بنجاح!`);
 
         } catch (err: any) {
             console.error('Registration error:', err);
