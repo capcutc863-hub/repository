@@ -2,7 +2,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
-  Package, UserCircle, ChevronRight, Info, UserPlus, Users as UsersIcon
+  Package, UserCircle, ChevronRight, Info, UserPlus, Users as UsersIcon, DatabaseBackup
 } from 'lucide-react';
 import type { User, SalesRep, Product, Order, Customer, UserRole } from '@/lib/types';
 import Dashboard from '@/components/dashboard/dashboard';
@@ -52,12 +52,6 @@ const LoginPage: React.FC = () => {
                 supabase.from('orders').select('*'),
                 supabase.from('customers').select('*')
             ]);
-
-            if (usersError) console.warn("Users fetch error:", usersError);
-            if (salesRepsError) console.warn("Sales reps fetch error:", salesRepsError);
-            if (productsError) console.warn("Products fetch error:", productsError);
-            if (ordersError) console.warn("Orders fetch error:", ordersError);
-            if (customersError) console.warn("Customers fetch error:", customersError);
 
             setUsers((usersData || []).map(dbUser => ({
                 id: dbUser.id,
@@ -128,10 +122,7 @@ const LoginPage: React.FC = () => {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         const usernameInput = loginUsername.trim().toLowerCase();
-        if (!usernameInput) {
-            alert('يرجى إدخال اسم المستخدم.');
-            return;
-        }
+        if (!usernameInput) return;
         setAuthLoading(true);
         
         try {
@@ -141,15 +132,12 @@ const LoginPage: React.FC = () => {
                 .eq('username', usernameInput)
                 .maybeSingle();
 
-            if (error) {
-                throw new Error(`خطأ في الاتصال بقاعدة البيانات: ${error.message}`);
-            }
-
             if (dbUser) {
                 if (dbUser.is_suspended) { 
-                    alert('هذا الحساب معلق حالياً. يرجى مراجعة الإدارة.');
+                    alert('هذا الحساب معلق حالياً.');
                 } else {
-                    const appUser: User = {
+                    await supabase.from('users').update({ online: true }).eq('id', dbUser.id);
+                    setCurrentUser({
                         id: dbUser.id,
                         name: dbUser.name,
                         nickname: dbUser.nickname,
@@ -161,99 +149,87 @@ const LoginPage: React.FC = () => {
                         canEditInventory: dbUser.can_edit_inventory,
                         canConfirmDelivery: dbUser.can_confirm_delivery,
                         online: true,
-                        salesRepId: dbUser.sales_rep_id,
-                    };
-                    
-                    await supabase.from('users').update({ online: true }).eq('id', appUser.id);
-                    setCurrentUser(appUser);
+                    });
                 }
-            } else if (usernameInput === 'admin') {
-                alert('جاري إعداد حساب المدير (admin) لأول مرة...');
-                await handleRegisterInternal('admin', 'admin', 'المدير العام', 'admin');
             } else {
-                alert('اسم المستخدم غير موجود. تأكد من كتابته بشكل صحيح أو قم بالتسجيل كمستخدم جديد.');
+                alert('اسم المستخدم غير موجود. تأكد من القائمة بالأسفل.');
             }
         } catch (err: any) {
-            console.error('Login error:', err);
-            alert(`حدث خطأ أثناء تسجيل الدخول: ${err.message}`);
+            alert(`خطأ: ${err.message}`);
         } finally {
             setAuthLoading(false);
         }
     };
 
-    const handleRegisterInternal = async (username: string, nickname: string, name: string, role: UserRole) => {
+    const handleSeedData = async () => {
+        setAuthLoading(true);
         try {
-            const newUserPayload = {
-                username: username,
-                name: name,
-                nickname: nickname,
-                role: role,
-                is_suspended: false,
-                is_muted: false,
-                can_edit_inventory: role === 'admin' || role === 'supervisor',
-                can_confirm_delivery: role === 'admin' || role === 'supervisor',
-                online: true,
-                start_date: new Date().toISOString(),
-            };
+            const defaultUsers = [
+                { username: 'admin', name: 'المدير العام', role: 'admin' },
+                { username: 'sales', name: 'مندوب المبيعات', role: 'sales' },
+                { username: 'supervisor', name: 'مشرف النظام', role: 'supervisor' }
+            ];
 
-            const { data, error } = await supabase.from('users').insert(newUserPayload).select().single();
-            if (error) throw error;
+            for (const u of defaultUsers) {
+                const { data: userData, error: userError } = await supabase.from('users').insert({
+                    username: u.username,
+                    name: u.name,
+                    nickname: u.username,
+                    role: u.role,
+                    online: false,
+                    is_suspended: false,
+                    can_edit_inventory: u.role !== 'sales',
+                    can_confirm_delivery: u.role !== 'sales',
+                }).select().single();
 
-            if (data && role === 'sales') {
-                await supabase.from('sales_reps').insert({
-                    user_id: data.id,
-                    name: data.name,
-                });
+                if (!userError && userData && u.role === 'sales') {
+                    await supabase.from('sales_reps').insert({
+                        user_id: userData.id,
+                        name: userData.name,
+                        total_commission: 0,
+                        pending_commission: 0
+                    });
+                }
             }
-
-            const appUser: User = {
-                id: data.id,
-                name: data.name,
-                nickname: data.nickname,
-                avatar: data.avatar_url,
-                username: data.username,
-                role: data.role,
-                isSuspended: data.is_suspended,
-                isMuted: data.is_muted ?? false,
-                canEditInventory: data.can_edit_inventory,
-                canConfirmDelivery: data.can_confirm_delivery,
-                online: true,
-            };
-            setCurrentUser(appUser);
+            alert('تم إضافة الحسابات الافتراضية بنجاح ✅');
+            fetchInitialUsers();
         } catch (err: any) {
-            alert(`فشلت عملية الإعداد: ${err.message}`);
+            alert(`فشل التثبيت: ${err.message}`);
+        } finally {
+            setAuthLoading(false);
         }
     };
 
     const handleRegister = async () => {
         const usernameInput = loginUsername.trim().toLowerCase();
         if (!usernameInput) {
-            alert('يرجى إدخال اسم مستخدم للتسجيل.');
+            alert('يرجى إدخال اسم مستخدم.');
             return;
         }
         setAuthLoading(true);
 
         try {
-            const { data: existingUser } = await supabase
-                .from('users')
-                .select('id')
-                .eq('username', usernameInput)
-                .maybeSingle();
-
-            if (existingUser) {
-                alert('اسم المستخدم هذا موجود بالفعل. جرب تسجيل الدخول.');
-                setAuthLoading(false);
-                return;
-            }
-
             const role: UserRole = usernameInput === 'admin' ? 'admin' : 'sales';
-            await handleRegisterInternal(usernameInput, usernameInput, usernameInput, role);
-            alert(`تم تسجيل "${usernameInput}" بنجاح!`);
-            fetchInitialUsers();
+            const { data, error } = await supabase.from('users').insert({
+                username: usernameInput,
+                name: usernameInput,
+                nickname: usernameInput,
+                role: role,
+                online: true
+            }).select().single();
 
+            if (error) throw error;
+
+            if (data && role === 'sales') {
+                await supabase.from('sales_reps').insert({
+                    user_id: data.id,
+                    name: data.name
+                });
+            }
+            fetchInitialUsers();
+            alert('تم التسجيل بنجاح! يمكنك الدخول الآن.');
         } catch (err: any) {
-            console.error('Registration error:', err);
-            alert(`فشلت عملية التسجيل: ${err.message}`);
+            alert(`فشل التسجيل: ${err.message}`);
         } finally {
             setAuthLoading(false);
         }
@@ -273,11 +249,10 @@ const LoginPage: React.FC = () => {
     if (currentUser) {
         if (loadingData) {
              return (
-                <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6 font-cairo" dir="rtl">
+                <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6" dir="rtl">
                     <div className="text-white text-center">
-                        <div className="w-16 h-16 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-                        <h1 className="text-3xl font-black mb-4">جاري تحميل البيانات...</h1>
-                        <p className="opacity-70">نحن نقوم بتجهيز لوحة التحكم الخاصة بك</p>
+                        <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+                        <h1 className="text-xl font-bold">جاري تحميل البيانات...</h1>
                     </div>
                 </div>
             );
@@ -304,57 +279,60 @@ const LoginPage: React.FC = () => {
 
     return (
         <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6 font-cairo overflow-y-auto" dir="rtl">
-            <div className="bg-white w-full max-w-md rounded-[3rem] p-12 shadow-2xl flex flex-col items-center animate-in zoom-in my-10">
-                <div className="bg-emerald-500 p-6 rounded-[2rem] shadow-xl mb-8"><Package className="w-12 h-12 text-white" /></div>
-                <h1 className="text-3xl font-black text-gray-900 mb-2 text-center">مؤسسة العطور الملكية</h1>
-                <p className="text-gray-400 font-bold mb-10 text-center text-sm">نظام الإدارة والتحصيل الذكي</p>
+            <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl flex flex-col items-center animate-in zoom-in">
+                <div className="bg-emerald-500 p-5 rounded-2xl shadow-xl mb-6"><Package className="w-10 h-10 text-white" /></div>
+                <h1 className="text-2xl font-black text-gray-900 mb-1">مؤسسة العطور الملكية</h1>
+                <p className="text-gray-400 font-bold mb-8 text-sm">تسجيل الدخول للنظام</p>
                 
-                <form onSubmit={handleLogin} className="w-full space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 mr-2 uppercase flex items-center gap-2"><UserCircle className="w-3 h-3"/> اسم المستخدم</label>
+                <form onSubmit={handleLogin} className="w-full space-y-4">
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-black text-gray-400 mr-2 uppercase">اسم المستخدم</label>
                         <input
                             value={loginUsername}
                             onChange={(e) => setLoginUsername(e.target.value)}
-                            placeholder="أدخل اسمك أو الكود الخاص بك..."
-                            className="w-full p-5 bg-gray-50 rounded-2xl outline-none font-black text-emerald-900 border-2 border-transparent focus:border-emerald-500 transition-all shadow-sm"
+                            placeholder="اكتب اسم المستخدم هنا..."
+                            className="w-full p-4 bg-gray-50 rounded-2xl outline-none font-bold text-emerald-900 border-2 border-transparent focus:border-emerald-500 transition-all shadow-sm"
                             required
                         />
                     </div>
-                    <div className="flex flex-col space-y-4">
-                        <button type="submit" disabled={authLoading} className="w-full py-5 bg-emerald-600 text-white rounded-[1.5rem] font-black text-xl hover:bg-emerald-700 shadow-2xl transition-all shadow-emerald-500/20 flex items-center justify-center gap-3 disabled:opacity-50">
-                           {authLoading ? 'جاري التحقق...' : 'دخول للنظام'}
-                           <ChevronRight className="w-6 h-6"/>
-                        </button>
-                        <button type="button" onClick={handleRegister} disabled={authLoading} className="w-full py-4 bg-white border-2 border-emerald-600 text-emerald-600 rounded-[1.5rem] font-black text-lg hover:bg-emerald-50 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-                           <UserPlus className="w-5 h-5"/>
-                           {authLoading ? 'جاري التسجيل...' : 'تسجيل مستخدم جديد'}
-                        </button>
-                    </div>
+                    <button type="submit" disabled={authLoading} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg hover:bg-emerald-700 shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                       {authLoading ? 'جاري التحقق...' : 'دخول للنظام'}
+                       <ChevronRight className="w-5 h-5"/>
+                    </button>
+                    <button type="button" onClick={handleRegister} disabled={authLoading} className="w-full py-3 text-emerald-600 font-bold text-sm hover:underline">
+                       تسجيل كمستخدم جديد
+                    </button>
                 </form>
 
-                {/* Registered Users List (For Debug/Ease of use) */}
-                <div className="mt-10 w-full">
-                    <h3 className="text-[10px] font-black text-gray-400 mb-4 uppercase flex items-center gap-2 border-b pb-2">
-                        <UsersIcon className="w-3 h-3"/> المستخدمون المسجلون حالياً:
+                {/* Registered Users List */}
+                <div className="mt-8 w-full border-t pt-6">
+                    <h3 className="text-[10px] font-black text-gray-400 mb-3 uppercase flex items-center gap-2">
+                        <UsersIcon className="w-3 h-3"/> المستخدمون المسجلون:
                     </h3>
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar p-1">
-                        {registeredUserNames.length > 0 ? registeredUserNames.map(name => (
+                    {registeredUserNames.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {registeredUserNames.map(name => (
+                                <button 
+                                    key={name} 
+                                    onClick={() => setLoginUsername(name)}
+                                    className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-black hover:bg-emerald-100 border border-emerald-100"
+                                >
+                                    {name}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <p className="text-[10px] text-gray-400 font-bold italic">قاعدة البيانات فارغة حالياً.</p>
                             <button 
-                                key={name} 
-                                onClick={() => setLoginUsername(name)}
-                                className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-black hover:bg-emerald-100 transition-all border border-emerald-100"
+                                onClick={handleSeedData}
+                                className="w-full py-3 bg-amber-50 text-amber-700 rounded-xl text-xs font-black flex items-center justify-center gap-2 border border-amber-100 hover:bg-amber-100 transition-all"
                             >
-                                {name}
+                                <DatabaseBackup className="w-4 h-4"/>
+                                إضافة الحسابات الافتراضية (admin, sales, supervisor)
                             </button>
-                        )) : (
-                            <p className="text-[10px] text-gray-400 font-bold italic">لا يوجد مستخدمون بعد. استخدم "admin" للبدء.</p>
-                        )}
-                    </div>
-                </div>
-
-                <div className="mt-8 p-6 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center gap-4">
-                    <Info className="text-emerald-600 w-5 h-5 shrink-0"/>
-                    <p className="text-[10px] font-bold text-emerald-800 leading-relaxed">تنبيه: هذا النظام مخصص لموظفي المؤسسة فقط. يتم تسجيل كافة محاولات الدخول.</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
