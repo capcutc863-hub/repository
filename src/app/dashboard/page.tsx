@@ -2,7 +2,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
-  Package, UserCircle, ChevronRight, Info, UserPlus
+  Package, UserCircle, ChevronRight, Info, UserPlus, Users as UsersIcon
 } from 'lucide-react';
 import type { User, SalesRep, Product, Order, Customer, UserRole } from '@/lib/types';
 import Dashboard from '@/components/dashboard/dashboard';
@@ -21,6 +21,20 @@ const LoginPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loadingData, setLoadingData] = useState(false);
+    
+    // State for listing registered users on login screen
+    const [registeredUserNames, setRegisteredUserNames] = useState<string[]>([]);
+
+    const fetchInitialUsers = async () => {
+        try {
+            const { data, error } = await supabase.from('users').select('username');
+            if (data) {
+                setRegisteredUserNames(data.map(u => u.username));
+            }
+        } catch (err) {
+            console.error("Error fetching user list:", err);
+        }
+    };
 
     const fetchData = async () => {
         setLoadingData(true);
@@ -101,6 +115,10 @@ const LoginPage: React.FC = () => {
     };
     
     useEffect(() => {
+        fetchInitialUsers();
+    }, []);
+
+    useEffect(() => {
         if (currentUser) {
             fetchData();
         }
@@ -117,7 +135,6 @@ const LoginPage: React.FC = () => {
         setAuthLoading(true);
         
         try {
-            // البحث عن المستخدم
             const { data: dbUser, error } = await supabase
                 .from('users')
                 .select('*')
@@ -151,7 +168,6 @@ const LoginPage: React.FC = () => {
                     setCurrentUser(appUser);
                 }
             } else if (usernameInput === 'admin') {
-                // إذا كان اسم المستخدم admin وغير موجود، نقوم بإنشائه تلقائياً كمدير
                 alert('جاري إعداد حساب المدير (admin) لأول مرة...');
                 await handleRegisterInternal('admin', 'admin', 'المدير العام', 'admin');
             } else {
@@ -233,6 +249,7 @@ const LoginPage: React.FC = () => {
             const role: UserRole = usernameInput === 'admin' ? 'admin' : 'sales';
             await handleRegisterInternal(usernameInput, usernameInput, usernameInput, role);
             alert(`تم تسجيل "${usernameInput}" بنجاح!`);
+            fetchInitialUsers();
 
         } catch (err: any) {
             console.error('Registration error:', err);
@@ -249,6 +266,7 @@ const LoginPage: React.FC = () => {
             setCurrentUser(null);
             setLoginUsername('');
             setAuthLoading(false);
+            fetchInitialUsers();
         }
     };
     
@@ -285,11 +303,12 @@ const LoginPage: React.FC = () => {
     }
 
     return (
-        <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6 font-cairo" dir="rtl">
-            <div className="bg-white w-full max-w-md rounded-[3rem] p-12 shadow-2xl flex flex-col items-center animate-in zoom-in">
+        <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6 font-cairo overflow-y-auto" dir="rtl">
+            <div className="bg-white w-full max-w-md rounded-[3rem] p-12 shadow-2xl flex flex-col items-center animate-in zoom-in my-10">
                 <div className="bg-emerald-500 p-6 rounded-[2rem] shadow-xl mb-8"><Package className="w-12 h-12 text-white" /></div>
                 <h1 className="text-3xl font-black text-gray-900 mb-2 text-center">مؤسسة العطور الملكية</h1>
                 <p className="text-gray-400 font-bold mb-10 text-center text-sm">نظام الإدارة والتحصيل الذكي</p>
+                
                 <form onSubmit={handleLogin} className="w-full space-y-6">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-gray-400 mr-2 uppercase flex items-center gap-2"><UserCircle className="w-3 h-3"/> اسم المستخدم</label>
@@ -312,7 +331,28 @@ const LoginPage: React.FC = () => {
                         </button>
                     </div>
                 </form>
-                <div className="mt-12 p-6 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center gap-4">
+
+                {/* Registered Users List (For Debug/Ease of use) */}
+                <div className="mt-10 w-full">
+                    <h3 className="text-[10px] font-black text-gray-400 mb-4 uppercase flex items-center gap-2 border-b pb-2">
+                        <UsersIcon className="w-3 h-3"/> المستخدمون المسجلون حالياً:
+                    </h3>
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar p-1">
+                        {registeredUserNames.length > 0 ? registeredUserNames.map(name => (
+                            <button 
+                                key={name} 
+                                onClick={() => setLoginUsername(name)}
+                                className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-black hover:bg-emerald-100 transition-all border border-emerald-100"
+                            >
+                                {name}
+                            </button>
+                        )) : (
+                            <p className="text-[10px] text-gray-400 font-bold italic">لا يوجد مستخدمون بعد. استخدم "admin" للبدء.</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="mt-8 p-6 bg-emerald-50 rounded-3xl border border-emerald-100 flex items-center gap-4">
                     <Info className="text-emerald-600 w-5 h-5 shrink-0"/>
                     <p className="text-[10px] font-bold text-emerald-800 leading-relaxed">تنبيه: هذا النظام مخصص لموظفي المؤسسة فقط. يتم تسجيل كافة محاولات الدخول.</p>
                 </div>
