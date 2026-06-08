@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
@@ -22,11 +23,11 @@ const LoginPage: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loadingData, setLoadingData] = useState(false);
 
-    const fetchInitialUsers = async () => {
+    const fetchInitialStatus = async () => {
         try {
             const { error } = await supabase.from('users').select('username').limit(1);
             if (error) {
-                setDbError("فشل الاتصال بالمخزن. تأكد من تفعيل الجداول في سوبابيز.");
+                setDbError("فشل الاتصال بالمخزن الجديد. تأكد من إعدادات سوبابيز.");
             } else {
                 setDbError(null);
             }
@@ -119,7 +120,7 @@ const LoginPage: React.FC = () => {
     };
     
     useEffect(() => {
-        fetchInitialUsers();
+        fetchInitialStatus();
     }, []);
 
     useEffect(() => {
@@ -186,7 +187,7 @@ const LoginPage: React.FC = () => {
                 <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6" dir="rtl">
                     <div className="text-white text-center">
                         <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-                        <h1 className="text-xl font-bold">جاري تحميل البيانات...</h1>
+                        <h1 className="text-xl font-bold">جاري تحميل البيانات من المخزن الجديد...</h1>
                     </div>
                 </div>
             );
@@ -216,7 +217,7 @@ const LoginPage: React.FC = () => {
             <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl flex flex-col items-center animate-in zoom-in">
                 <div className="bg-emerald-500 p-5 rounded-2xl shadow-xl mb-6"><Package className="w-10 h-10 text-white" /></div>
                 <h1 className="text-2xl font-black text-gray-900 mb-1">مؤسسة العطور الملكية</h1>
-                <p className="text-gray-400 font-bold mb-8 text-sm">تسجيل الدخول للنظام</p>
+                <p className="text-gray-400 font-bold mb-8 text-sm">نظام الإدارة المطور</p>
                 
                 {dbError && (
                     <Alert variant="destructive" className="mb-6 rounded-2xl border-2">
@@ -243,8 +244,8 @@ const LoginPage: React.FC = () => {
                     </button>
                 </form>
 
-                <div className="mt-8 text-center">
-                    <p className="text-[10px] text-gray-300 font-bold uppercase">نظام الإدارة - جميع الحقوق محفوظة</p>
+                <div className="mt-12 text-center">
+                    <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">المخزن الجديد مفعل ✅</p>
                 </div>
             </div>
         </div>
