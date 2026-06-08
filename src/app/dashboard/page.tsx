@@ -101,7 +101,7 @@ const LoginPage: React.FC = () => {
                 customerAddress: o.customer_address,
                 customerNotes: o.customer_notes,
                 discountPercentage: Number(o.discount_percentage || 0),
-                discountAmount: Number(o.discount_amount || 0),
+                discount_amount: Number(o.discount_amount || 0),
                 shippingCost: Number(o.shipping_cost || 0),
                 totalAmount: Number(o.total_amount || 0),
                 subtotal: Number(o.subtotal || 0),
