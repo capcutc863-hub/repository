@@ -9,14 +9,14 @@ export function createClient() {
    */
   
   // الخانة الأولى: ضع الرابط (URL) هنا
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-new-project-url.supabase.co';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hyyznzimuavvukjamxmu.supabase.co';
   
   // الخانة الثانية: ضع المفتاح (Anon Key) هنا
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-new-anon-key';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_ANON_KEY_HERE';
 
   // تنبيه بسيط في المتصفح إذا لم يتم التحديث بعد
-  if (supabaseUrl.includes('your-new-project-url')) {
-    console.warn('تنبيه: بانتظار إدخال بيانات مشروع Supabase الجديد ليعمل النظام.');
+  if (supabaseAnonKey === 'YOUR_ANON_KEY_HERE') {
+    console.warn('تنبيه: بانتظار إدخال مفتاح الـ Anon Key الجديد من سوبابيز ليعمل النظام.');
   }
 
   return createBrowserClient(supabaseUrl, supabaseAnonKey);
