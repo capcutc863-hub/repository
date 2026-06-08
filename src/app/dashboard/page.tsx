@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
-  Package, ChevronRight, Users as UsersIcon, AlertTriangle
+  Package, ChevronRight, AlertTriangle
 } from 'lucide-react';
 import type { User, SalesRep, Product, Order, Customer } from '@/lib/types';
 import Dashboard from '@/components/dashboard/dashboard';
@@ -21,21 +21,17 @@ const LoginPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loadingData, setLoadingData] = useState(false);
-    const [registeredUserNames, setRegisteredUserNames] = useState<string[]>([]);
 
     const fetchInitialUsers = async () => {
         try {
-            const { data, error } = await supabase.from('users').select('username').order('username');
+            const { error } = await supabase.from('users').select('username').limit(1);
             if (error) {
                 setDbError("فشل الاتصال بالمخزن. تأكد من تفعيل الجداول في سوبابيز.");
-                return;
-            }
-            if (data) {
-                setRegisteredUserNames(data.map(u => u.username));
+            } else {
                 setDbError(null);
             }
         } catch (err) {
-            console.error("Error fetching user list:", err);
+            console.error("Error connecting to DB:", err);
         }
     };
 
@@ -181,7 +177,6 @@ const LoginPage: React.FC = () => {
             setCurrentUser(null);
             setLoginUsername('');
             setAuthLoading(false);
-            fetchInitialUsers();
         }
     };
     
@@ -221,7 +216,7 @@ const LoginPage: React.FC = () => {
             <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl flex flex-col items-center animate-in zoom-in">
                 <div className="bg-emerald-500 p-5 rounded-2xl shadow-xl mb-6"><Package className="w-10 h-10 text-white" /></div>
                 <h1 className="text-2xl font-black text-gray-900 mb-1">مؤسسة العطور الملكية</h1>
-                <p className="text-gray-400 font-bold mb-8 text-sm">تسجيل الدخول (المخزن الجديد)</p>
+                <p className="text-gray-400 font-bold mb-8 text-sm">تسجيل الدخول للنظام</p>
                 
                 {dbError && (
                     <Alert variant="destructive" className="mb-6 rounded-2xl border-2">
@@ -248,23 +243,8 @@ const LoginPage: React.FC = () => {
                     </button>
                 </form>
 
-                <div className="mt-8 w-full border-t pt-6">
-                    <h3 className="text-[10px] font-black text-gray-400 mb-3 uppercase flex items-center gap-2">
-                        <UsersIcon className="w-3 h-3"/> المستخدمون المتاحون:
-                    </h3>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                        {registeredUserNames.length > 0 ? registeredUserNames.map(name => (
-                            <button 
-                                key={name} 
-                                onClick={() => setLoginUsername(name)}
-                                className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-black hover:bg-emerald-100 border border-emerald-100"
-                            >
-                                {name}
-                            </button>
-                        )) : (
-                            <p className="text-xs text-gray-300 font-bold">جاري تحميل القائمة...</p>
-                        )}
-                    </div>
+                <div className="mt-8 text-center">
+                    <p className="text-[10px] text-gray-300 font-bold uppercase">نظام الإدارة - جميع الحقوق محفوظة</p>
                 </div>
             </div>
         </div>
