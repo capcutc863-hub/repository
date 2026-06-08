@@ -2,7 +2,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
-  Package, UserCircle, ChevronRight, Info, UserPlus, Users as UsersIcon, DatabaseBackup, AlertTriangle
+  Package, ChevronRight, Users as UsersIcon, DatabaseBackup, AlertTriangle
 } from 'lucide-react';
 import type { User, SalesRep, Product, Order, Customer, UserRole } from '@/lib/types';
 import Dashboard from '@/components/dashboard/dashboard';
@@ -32,9 +32,9 @@ const LoginPage: React.FC = () => {
             const { data, error } = await supabase.from('users').select('username');
             if (error) {
                 if (error.message.includes('relation "users" does not exist')) {
-                    setDbError("قاعدة البيانات جديدة تماماً. يرجى الضغط على الزرار بالأسفل لإنشاء الجداول والحسابات.");
+                    setDbError("قاعدة البيانات لا تحتوي على جداول. يرجى رفع ملف الـ Backup أو الضغط على زرار الإنشاء بالأسفل.");
                 } else {
-                    setDbError("فشل الاتصال بـ Supabase. تأكد من وضع الـ Key والـ URL الجديد في ملف .env");
+                    setDbError("فشل الاتصال بـ Supabase. تأكد من وضع المفاتيح الجديدة في ملف supabase.ts أو .env");
                 }
                 return;
             }
@@ -163,7 +163,7 @@ const LoginPage: React.FC = () => {
                     });
                 }
             } else {
-                alert('اسم المستخدم غير موجود. تأكد من الضغط على زر "إضافة الحسابات الافتراضية" أولاً.');
+                alert('اسم المستخدم غير موجود. تأكد من رفع ملف الـ Backup أو التسجيل كجديد.');
             }
         } catch (err: any) {
             alert(`خطأ: ${err.message}`);
@@ -175,7 +175,6 @@ const LoginPage: React.FC = () => {
     const handleSeedData = async () => {
         setAuthLoading(true);
         try {
-            // إضافة الحسابات الأساسية
             const defaultUsers = [
                 { username: 'admin', name: 'المدير العام', role: 'admin' as UserRole },
                 { username: 'sales', name: 'مندوب المبيعات', role: 'sales' as UserRole },
@@ -203,10 +202,10 @@ const LoginPage: React.FC = () => {
                     });
                 }
             }
-            alert('تم إنشاء الحسابات بنجاح! جرب الدخول بكلمة admin الآن ✅');
+            alert('تم إنشاء الحسابات بنجاح! جرب الدخول بـ admin الآن ✅');
             fetchInitialUsers();
         } catch (err: any) {
-            alert(`فشل التثبيت: ${err.message}`);
+            alert(`فشل التثبيت: ${err.message}. تأكد من إنشاء الجداول أولاً (برفع الـ Backup).`);
         } finally {
             setAuthLoading(false);
         }
@@ -299,7 +298,7 @@ const LoginPage: React.FC = () => {
                 {dbError && (
                     <Alert variant="destructive" className="mb-6 rounded-2xl border-2">
                         <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle className="font-black">مشكلة في قاعدة البيانات</AlertTitle>
+                        <AlertTitle className="font-black">قاعدة البيانات غير جاهزة</AlertTitle>
                         <AlertDescription className="text-xs font-bold">
                             {dbError}
                         </AlertDescription>
@@ -331,7 +330,7 @@ const LoginPage: React.FC = () => {
                         <UsersIcon className="w-3 h-3"/> المستخدمون المتاحون:
                     </h3>
                     <div className="flex flex-wrap gap-2 mb-4">
-                        {registeredUserNames.map(name => (
+                        {registeredUserNames.length > 0 ? registeredUserNames.map(name => (
                             <button 
                                 key={name} 
                                 onClick={() => setLoginUsername(name)}
@@ -339,15 +338,17 @@ const LoginPage: React.FC = () => {
                             >
                                 {name}
                             </button>
-                        ))}
+                        )) : (
+                            <p className="text-xs text-gray-300 font-bold">لا يوجد مستخدمون حالياً.</p>
+                        )}
                     </div>
                     
                     <button 
                         onClick={handleSeedData}
-                        className="w-full py-4 bg-amber-100 text-amber-900 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border-2 border-amber-200 hover:bg-amber-200 transition-all shadow-lg animate-pulse"
+                        className="w-full py-4 bg-amber-100 text-amber-900 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border-2 border-amber-200 hover:bg-amber-200 transition-all shadow-lg"
                     >
                         <DatabaseBackup className="w-5 h-5"/>
-                        إضافة الحسابات الافتراضية (admin, sales, supervisor)
+                        إنشاء الحسابات الأساسية (admin, sales)
                     </button>
                 </div>
             </div>
