@@ -22,7 +22,6 @@ const LoginPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [initialLoading, setInitialLoading] = useState(false);
-    const [refreshing, setRefreshing] = useState(false);
 
     // التحقق من حالة الاتصال بالمخزن الجديد
     useEffect(() => {
@@ -39,7 +38,6 @@ const LoginPage: React.FC = () => {
 
     const fetchData = async (isInitial = false) => {
         if (isInitial) setInitialLoading(true);
-        else setRefreshing(true);
         
         try {
             const [
@@ -52,7 +50,7 @@ const LoginPage: React.FC = () => {
                 supabase.from('users').select('*'),
                 supabase.from('sales_reps').select('*'),
                 supabase.from('products').select('*'),
-                supabase.from('orders').select('*'),
+                supabase.from('orders').select('*').order('created_at', { ascending: false }),
                 supabase.from('customers').select('*')
             ]);
 
@@ -118,8 +116,7 @@ const LoginPage: React.FC = () => {
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
-            setInitialLoading(false);
-            setRefreshing(false);
+            if (isInitial) setInitialLoading(false);
         }
     };
     
