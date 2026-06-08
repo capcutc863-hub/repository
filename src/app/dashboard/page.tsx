@@ -27,7 +27,7 @@ const LoginPage: React.FC = () => {
         try {
             const { data, error } = await supabase.from('users').select('username').order('username');
             if (error) {
-                setDbError("فشل الاتصال بالمخزن الجديد. تأكد من إتمام خطوة الـ Backup.");
+                setDbError("فشل الاتصال بالمخزن الجديد. تأكد من إتمام خطوة الـ Backup في SQL Editor.");
                 return;
             }
             if (data) {
@@ -78,13 +78,17 @@ const LoginPage: React.FC = () => {
                 userId: rep.user_id, 
                 maxDiscountAllowed: rep.max_discount_allowed, 
                 customCommissionRate: rep.custom_commission_rate, 
-                totalCommission: rep.total_commission, 
-                pending_commission: rep.pending_commission, 
-                ordersCount: rep.orders_count, 
+                totalCommission: Number(rep.total_commission || 0), 
+                pendingCommission: Number(rep.pending_commission || 0), 
+                ordersCount: Number(rep.orders_count || 0), 
                 monthlyHistory: rep.monthly_history || [] 
             })));
             
-            setProducts((productsData || []).map(p => ({...p, pricePerMg: p.price_per_mg})));
+            setProducts((productsData || []).map(p => ({
+                ...p, 
+                pricePerMg: Number(p.price_per_mg || 0),
+                stock: Number(p.stock || 0)
+            })));
             
             setOrders((ordersData || []).map(o => ({
                 ...o,
@@ -96,13 +100,20 @@ const LoginPage: React.FC = () => {
                 customerPhone: o.customer_phone,
                 customerAddress: o.customer_address,
                 customerNotes: o.customer_notes,
-                discountPercentage: o.discount_percentage,
-                discountAmount: o.discount_amount,
-                shippingCost: o.shipping_cost,
-                totalAmount: o.total_amount,
+                discountPercentage: Number(o.discount_percentage || 0),
+                discountAmount: Number(o.discount_amount || 0),
+                shippingCost: Number(o.shipping_cost || 0),
+                totalAmount: Number(o.total_amount || 0),
+                subtotal: Number(o.subtotal || 0),
+                commission: Number(o.commission || 0),
             })));
             
-            setCustomers((customersData || []).map(c => ({...c, id: c.id.toString(), totalSpent: c.total_spent, lastOrderDate: c.last_order_date})));
+            setCustomers((customersData || []).map(c => ({
+                ...c, 
+                id: c.id.toString(), 
+                totalSpent: Number(c.total_spent || 0), 
+                lastOrderDate: c.last_order_date
+            })));
             
         } catch (error: any) {
             console.error("Error fetching data:", error);
