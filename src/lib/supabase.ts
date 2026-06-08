@@ -1,7 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
-  // الرابط الخاص بمشروعك الجديد على سوبابيز (تم تنظيفه ليعمل بشكل صحيح)
+  // الرابط الخاص بمشروعك الجديد على سوبابيز
   const supabaseUrl = 'https://hyyznzimuavvukjamxmu.supabase.co';
   
   // المفتاح العام (Anon Key) الخاص بمشروعك الجديد

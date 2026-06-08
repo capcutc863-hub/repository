@@ -25,9 +25,9 @@ const LoginPage: React.FC = () => {
 
     const fetchInitialUsers = async () => {
         try {
-            const { data, error } = await supabase.from('users').select('username');
+            const { data, error } = await supabase.from('users').select('username').order('username');
             if (error) {
-                setDbError("فشل الاتصال: تأكد من رفع الـ Backup في سوبابيز.");
+                setDbError("فشل الاتصال بالمخزن الجديد. تأكد من إتمام خطوة الـ Backup.");
                 return;
             }
             if (data) {
