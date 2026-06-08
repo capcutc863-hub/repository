@@ -1,5 +1,8 @@
-# Firebase Studio
+# مؤسسة العطور الملكية - نظام الإدارة
+تم تحديث النظام ليعمل مع قاعدة البيانات الجديدة (المخزن الجديد).
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+## تعليمات التحديث للـ Netlify:
+1. افتح الترمينال.
+2. اكتب `git add .`
+3. اكتب `git commit -m "تحديث بيانات الربط"`
+4. اكتب `git push`
