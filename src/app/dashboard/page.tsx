@@ -1,9 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
-  Package, ChevronRight, Users as UsersIcon, DatabaseBackup, AlertTriangle
+  Package, ChevronRight, Users as UsersIcon, AlertTriangle
 } from 'lucide-react';
-import type { User, SalesRep, Product, Order, Customer, UserRole } from '@/lib/types';
+import type { User, SalesRep, Product, Order, Customer } from '@/lib/types';
 import Dashboard from '@/components/dashboard/dashboard';
 import { createClient } from '@/lib/supabase';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,7 +14,6 @@ const LoginPage: React.FC = () => {
     const [authLoading, setAuthLoading] = useState(false);
     const [dbError, setDbError] = useState<string | null>(null);
     
-    // App state
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [users, setUsers] = useState<User[]>([]);
     const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
@@ -22,16 +21,13 @@ const LoginPage: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loadingData, setLoadingData] = useState(false);
-    
-    // State for listing registered users on login screen
     const [registeredUserNames, setRegisteredUserNames] = useState<string[]>([]);
 
     const fetchInitialUsers = async () => {
         try {
             const { data, error } = await supabase.from('users').select('username');
             if (error) {
-                console.error("Supabase Error:", error);
-                setDbError("فشل الاتصال بقاعدة البيانات. تأكد من رفع الـ Backup بنجاح.");
+                setDbError("فشل الاتصال: تأكد من رفع الـ Backup في سوبابيز.");
                 return;
             }
             if (data) {
@@ -83,7 +79,7 @@ const LoginPage: React.FC = () => {
                 maxDiscountAllowed: rep.max_discount_allowed, 
                 customCommissionRate: rep.custom_commission_rate, 
                 totalCommission: rep.total_commission, 
-                pendingCommission: rep.pending_commission, 
+                pending_commission: rep.pending_commission, 
                 ordersCount: rep.orders_count, 
                 monthlyHistory: rep.monthly_history || [] 
             })));
@@ -124,7 +120,6 @@ const LoginPage: React.FC = () => {
             fetchData();
         }
     }, [currentUser]);
-
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -221,9 +216,7 @@ const LoginPage: React.FC = () => {
                     <Alert variant="destructive" className="mb-6 rounded-2xl border-2">
                         <AlertTriangle className="h-4 w-4" />
                         <AlertTitle className="font-black">تنبيه الاتصال</AlertTitle>
-                        <AlertDescription className="text-xs font-bold">
-                            {dbError}
-                        </AlertDescription>
+                        <AlertDescription className="text-xs font-bold">{dbError}</AlertDescription>
                     </Alert>
                 )}
 
