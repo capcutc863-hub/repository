@@ -20,7 +20,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, orders, 
     const [orderSearch, setOrderSearch] = useState('');
     const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<Order | null>(null);
     const receiptRef = useRef<HTMLDivElement>(null);
-    const [receiptImage, setReceiptImage] = useState<{dataUrl: string; format: 'png' | 'pdf'} | null>(null);
+    const [exporting, setExporting] = useState(false);
 
     const filteredOrders = useMemo(() => {
         let displayOrders = orders;
@@ -28,7 +28,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, orders, 
             displayOrders = orders.filter(o => o.salesRepId === currentRep.id);
         }
 
-        if (!orderSearch) return displayOrders.sort((a,b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
+        if (!orderSearch) return [...displayOrders].sort((a,b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime());
 
         return displayOrders.filter(o =>
             o.customerName.toLowerCase().includes(orderSearch.toLowerCase()) || 
@@ -43,60 +43,42 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, orders, 
 
     const downloadAs = async (format: 'png' | 'pdf') => {
         if (!receiptRef.current || !selectedOrderForPrint) return;
+        setExporting(true);
 
         try {
-            const canvas = await html2canvas(receiptRef.current, { scale: 3, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
+            const canvas = await html2canvas(receiptRef.current, { 
+                scale: 3, 
+                useCORS: true, 
+                allowTaint: true, 
+                backgroundColor: '#ffffff',
+                logging: false
+            });
             const imgData = canvas.toDataURL('image/png');
-            setReceiptImage({dataUrl: imgData, format});
+
+            if (format === 'png') {
+                const link = document.createElement('a');
+                link.href = imgData;
+                link.download = `فاتورة-${selectedOrderForPrint.customerName}-${selectedOrderForPrint.id.substring(0, 5)}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                const pdf = new jsPDF({ 
+                    orientation: 'p', 
+                    unit: 'px', 
+                    format: [canvas.width / 3, canvas.height / 3] 
+                });
+                pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 3, canvas.height / 3);
+                pdf.save(`فاتورة-${selectedOrderForPrint.customerName}-${selectedOrderForPrint.id.substring(0, 5)}.pdf`);
+            }
         } catch (error) {
             console.error("Error generating file:", error);
-            alert("حدث خطأ أثناء إنشاء الملف.");
+            alert("حدث خطأ أثناء إنشاء الملف المنسق.");
+        } finally {
+            setExporting(false);
         }
     };
     
-    useEffect(() => {
-      if (receiptImage && selectedOrderForPrint) {
-        if (receiptImage.format === 'png') {
-            const link = document.createElement('a');
-            link.href = receiptImage.dataUrl;
-            link.download = `invoice-${selectedOrderForPrint.id}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } else { // pdf
-            const pdf = new jsPDF({ orientation: 'p', unit: 'px', format: 'a4' });
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            
-            const img = new Image();
-            img.src = receiptImage.dataUrl;
-            img.onload = () => {
-                const imgWidth = img.width;
-                const imgHeight = img.height;
-                const ratio = imgWidth / imgHeight;
-                
-                let finalWidth, finalHeight;
-
-                if (ratio > (pdfWidth/pdfHeight)) {
-                  finalWidth = pdfWidth;
-                  finalHeight = pdfWidth / ratio;
-                } else {
-                  finalHeight = pdfHeight;
-                  finalWidth = pdfHeight * ratio;
-                }
-
-                const x = (pdfWidth - finalWidth) / 2;
-                const y = (pdfHeight - finalHeight) / 2;
-                
-                pdf.addImage(receiptImage.dataUrl, 'PNG', x, y, finalWidth, finalHeight);
-                pdf.save(`invoice-${selectedOrderForPrint.id}.pdf`);
-            }
-        }
-        setReceiptImage(null); // Reset after download
-      }
-    }, [receiptImage, selectedOrderForPrint]);
-
-
     const handleDeleteOrder = async (orderId: string) => {
       if (window.confirm('هل أنت متأكد من حذف الفاتورة نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.')) {
         const { error } = await supabase.from('orders').delete().eq('id', orderId);
@@ -104,7 +86,7 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, orders, 
             alert(`فشل حذف الفاتورة: ${error.message}`);
         } else {
             alert('تم حذف الفاتورة بنجاح.');
-            refreshData();
+            refreshData(); // تحديث البيانات سيبقى في نفس التبويب بفضل حالة dashboard.tsx
         }
       }
     }
@@ -123,24 +105,22 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, orders, 
             alert(`فشل تحديث حالة الطلب: ${error.message}`);
         } else {
             alert('تم تحديث حالة الطلب ✅');
-            refreshData(); // Refresh all data to reflect potential commission changes
+            refreshData();
         }
     };
     
     const formatTimestamp = (ts: Date | string) => {
-        if (ts instanceof Date) {
-            return ts.toLocaleString('ar-EG');
-        }
-        if (typeof ts === 'string') {
-            return new Date(ts).toLocaleString('ar-EG');
-        }
-        return 'تاريخ غير معروف';
+        return new Date(ts).toLocaleString('ar-EG', {
+            hour: '2-digit',
+            minute: '2-digit',
+            day: 'numeric',
+            month: 'short'
+        });
     }
-
 
     return (
         <div className="space-y-6 animate-in fade-in">
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 flex items-center gap-4">
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 flex items-center gap-4 shadow-sm">
                 <Search className="text-gray-300 w-5 h-5" />
                 <input value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} placeholder="ابحث في الفواتير بالاسم، رقم الهاتف، أو كود الطلب..." className="w-full bg-transparent p-2 outline-none font-bold text-emerald-950" />
             </div>
@@ -160,15 +140,15 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, orders, 
                             <tr key={o.id} className="hover:bg-gray-50/50 transition-all group">
                                 <td className="p-8">
                                     <p className="font-black text-emerald-950">{o.customerName}</p>
-                                    <p className="text-[10px] text-gray-400 font-bold">#{o.id.toString().substring(0,6)} • {formatTimestamp(o.createdAt)}</p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase">#{o.id.toString().substring(0,6)} • {formatTimestamp(o.createdAt)}</p>
                                 </td>
-                                <td className="p-8 text-center font-black text-emerald-900">{o.totalAmount.toLocaleString()}</td>
+                                <td className="p-8 text-center font-black text-emerald-900">{o.totalAmount.toLocaleString()} ج.م</td>
                                 <td className="p-8 text-center text-xs font-black text-gray-500">{o.salesRepName || 'غير محدد'}</td>
                                 <td className="p-8 text-center">
                                     <select 
                                         value={o.status} 
                                         onChange={(e) => toggleOrderStatus(o, e.target.value as OrderStatus)}
-                                        className={`px-4 py-2 rounded-full text-[10px] font-black border outline-none cursor-pointer ${
+                                        className={`px-4 py-2 rounded-full text-[10px] font-black border outline-none cursor-pointer transition-all ${
                                             o.status === 'تم التسليم' ? 'bg-green-100 text-green-700 border-green-200' : 
                                             o.status === 'ملغي' || o.status === 'مرتجع' ? 'bg-red-100 text-red-700 border-red-200' : 
                                             'bg-amber-100 text-amber-700 border-amber-200'
@@ -182,10 +162,10 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, orders, 
                                 </td>
                                 <td className="p-8">
                                     <div className="flex gap-2">
-                                        <button onClick={() => handlePreviewOrder(o)} className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all"><Printer className="w-5 h-5"/></button>
-                                        <button onClick={() => onEditOrder(o)} className="p-4 bg-amber-50 text-amber-600 rounded-2xl hover:bg-amber-600 hover:text-white transition-all"><Edit3 className="w-5 h-5"/></button>
+                                        <button onClick={() => handlePreviewOrder(o)} className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm"><Printer className="w-5 h-5"/></button>
+                                        <button onClick={() => onEditOrder(o)} className="p-4 bg-amber-50 text-amber-600 rounded-2xl hover:bg-amber-600 hover:text-white transition-all shadow-sm"><Edit3 className="w-5 h-5"/></button>
                                         {currentUser.role === 'admin' && (
-                                            <button onClick={() => handleDeleteOrder(o.id.toString())} className="p-4 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all"><Trash2 className="w-5 h-5"/></button>
+                                            <button onClick={() => handleDeleteOrder(o.id.toString())} className="p-4 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all shadow-sm"><Trash2 className="w-5 h-5"/></button>
                                         )}
                                     </div>
                                 </td>
@@ -197,18 +177,32 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, orders, 
 
             {/* Receipt Preview Modal */}
             {selectedOrderForPrint && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[1000] p-4 animate-in fade-in">
-                    <div className="bg-white rounded-[3rem] p-8 shadow-2xl w-full max-w-2xl relative animate-in zoom-in">
-                        <button onClick={() => setSelectedOrderForPrint(null)} className="absolute top-6 left-6 p-3 bg-gray-100 rounded-2xl hover:bg-red-100 hover:text-red-500 transition-all z-10"><X/></button>
-                        <h3 className="text-2xl font-black text-emerald-950 mb-6 text-center">معاينة الفاتورة</h3>
-                        <div className="bg-gray-50 rounded-2xl p-4 border overflow-y-auto max-h-[60vh] flex justify-center">
-                             <div ref={receiptRef}>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[1000] p-4 animate-in fade-in">
+                    <div className="bg-white rounded-[3rem] p-10 shadow-2xl w-full max-w-4xl relative animate-in zoom-in overflow-hidden">
+                        <button onClick={() => setSelectedOrderForPrint(null)} className="absolute top-8 left-8 p-4 bg-gray-100 rounded-2xl hover:bg-red-100 hover:text-red-500 transition-all z-20"><X/></button>
+                        <h3 className="text-3xl font-black text-emerald-950 mb-10 text-center">معاينة الفاتورة الملكية</h3>
+                        
+                        <div className="bg-gray-100/50 rounded-[2.5rem] p-8 border border-gray-200 overflow-y-auto max-h-[65vh] flex justify-center">
+                             <div ref={receiptRef} className="shadow-2xl">
                                 <OrderReceipt order={selectedOrderForPrint} />
                             </div>
                         </div>
-                        <div className="flex gap-4 justify-center mt-6">
-                            <button onClick={() => downloadAs('png')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:bg-emerald-700 transition-all"><Download/> تحميل كصورة (PNG)</button>
-                            <button onClick={() => downloadAs('pdf')} className="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-lg hover:bg-indigo-700 transition-all"><Download/> تحميل كملف (PDF)</button>
+
+                        <div className="flex gap-4 justify-center mt-10">
+                            <button 
+                                disabled={exporting}
+                                onClick={() => downloadAs('png')} 
+                                className="bg-emerald-600 text-white px-10 py-5 rounded-[1.5rem] font-black text-lg flex items-center gap-3 shadow-xl hover:bg-emerald-700 transition-all disabled:opacity-50"
+                            >
+                                <Download/> {exporting ? 'جاري التجهيز...' : 'تحميل صورة (PNG)'}
+                            </button>
+                            <button 
+                                disabled={exporting}
+                                onClick={() => downloadAs('pdf')} 
+                                className="bg-indigo-600 text-white px-10 py-5 rounded-[1.5rem] font-black text-lg flex items-center gap-3 shadow-xl hover:bg-indigo-700 transition-all disabled:opacity-50"
+                            >
+                                <Download/> {exporting ? 'جاري التجهيز...' : 'تحميل ملف (PDF)'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -218,5 +212,3 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, orders, 
 };
 
 export default OrdersTab;
-
-    

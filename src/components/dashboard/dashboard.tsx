@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   LayoutDashboard, ShoppingCart, Users, Package, TrendingUp, PlusCircle,
   X, LogOut, UserCircle, MessageSquare, Edit3, Star, Download, ShieldCheck
@@ -55,6 +55,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     refreshData,
 }) => {
     const supabase = createClient();
+    
+    // حفظ التبويب النشط لضمان عدم الرجوع للرئيسية عند التحديث
     const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'inventory' | 'customers' | 'admin-users' | 'performance'>('dashboard');
     
     // Modals
@@ -69,7 +71,6 @@ const Dashboard: React.FC<DashboardProps> = ({
         [salesReps, currentUser]
     );
 
-    // ميزة النسخ الاحتياطي الشامل
     const handleDownloadBackup = () => {
         const backupData = {
             exportDate: new Date().toISOString(),
@@ -179,6 +180,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           const { error } = result;
           if (error) throw new Error(error.message);
           
+          // تحديث البيانات دون تغيير التبويب
           await refreshData();
           setShowOrderForm(null);
           alert('تم حفظ الفاتورة بنجاح ✅');

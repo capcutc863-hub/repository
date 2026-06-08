@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import type { SalesRep } from '@/lib/types';
@@ -31,7 +30,7 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({ salesReps = [], refresh
     const resetMonth = (repId?: string) => {
         const label = repId ? 'لهذا المندوب' : 'للجميع';
         if (!window.confirm(`تنبيه هام: هل أنت متأكد من أرشفة وتصفير الشهر ${label}؟ سيتم نقل العمولات المكتسبة للسجل وتصفير العدادات.`)) return;
-        alert('هذه الميزة تتطلب تنفيذها كدالة بقاعدة البيانات (لم يتم تنفيذها بعد).');
+        alert('هذه الميزة تتطلب تنفيذها كدالة بقاعدة البيانات (Stored Procedure) لضمان أمان العمليات المالية.');
     };
 
     const instantResetCommissions = async (repId: string) => {
@@ -56,18 +55,20 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({ salesReps = [], refresh
 
     return (
         <div className="space-y-10 animate-in fade-in">
-            <div className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] border border-gray-100">
+            <div className="flex justify-between items-center bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm">
                 <h3 className="text-xl font-black text-gray-900">تصفير الشهور والأداء المالي</h3>
                 <button onClick={() => resetMonth()} className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-2 shadow-xl hover:bg-red-700 transition-all shadow-red-200"><RefreshCcw className="w-5 h-5"/> أرشفة وتصفير الكل</button>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {salesReps.map(rep => (
-                    <div key={rep.id} className="bg-white p-8 rounded-[3rem] border border-gray-100 relative">
+                    <div key={rep.id} className="bg-white p-8 rounded-[3rem] border border-gray-100 relative shadow-sm hover:shadow-md transition-all">
                         <div className="flex justify-between items-start mb-4">
                             <div>
                                 <h5 className="font-black text-xl text-emerald-950">{rep.name || 'مستخدم مجهول'}</h5>
-                                <div className="flex gap-0.5">
-                                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                                <div className="flex gap-0.5 mt-1">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star key={i} className={`w-3 h-3 ${i < 4 ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
+                                    ))}
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -84,7 +85,7 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({ salesReps = [], refresh
                         
                         <div className="space-y-4 mb-8 pt-4 border-t">
                             <div className="flex items-center gap-4">
-                                <label className="text-[10px] font-black text-gray-500 uppercase whitespace-nowrap">نسبة الخصم (%):</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase whitespace-nowrap">نسبة الخصم القصوى (%):</label>
                                 <input 
                                     type="number" 
                                     defaultValue={rep.maxDiscountAllowed || 0}
@@ -93,7 +94,7 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({ salesReps = [], refresh
                                 />
                             </div>
                             <div className="flex items-center gap-4">
-                                <label className="text-[10px] font-black text-gray-500 uppercase whitespace-nowrap">نسبة العمولة (%):</label>
+                                <label className="text-[10px] font-black text-gray-500 uppercase whitespace-nowrap">نسبة العمولة الافتراضية (%):</label>
                                 <input 
                                     type="number" 
                                     step="0.01"
@@ -106,12 +107,12 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({ salesReps = [], refresh
                         
                         <div className="grid grid-cols-2 gap-4 mb-8">
                             <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
-                                <p className="text-[10px] text-indigo-400 font-black uppercase">مكتسبة (تم التسليم)</p>
-                                <p className="text-xl font-black text-indigo-700">{(rep.totalCommission || 0).toLocaleString()} <span className="text-xs">ج.م</span></p>
+                                <p className="text-[10px] text-indigo-400 font-black uppercase mb-1">مكتسبة (تم التسليم)</p>
+                                <p className="text-xl font-black text-indigo-700">{(Number(rep.totalCommission) || 0).toLocaleString()} <span className="text-xs">ج.م</span></p>
                             </div>
                             <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                                <p className="text-[10px] text-amber-400 font-black uppercase">معلقة (قيد التنفيذ)</p>
-                                <p className="text-xl font-black text-amber-700">{(rep.pendingCommission || 0).toLocaleString()} <span className="text-xs">ج.م</span></p>
+                                <p className="text-[10px] text-amber-400 font-black uppercase mb-1">معلقة (قيد التنفيذ)</p>
+                                <p className="text-xl font-black text-amber-700">{(Number(rep.pendingCommission) || 0).toLocaleString()} <span className="text-xs">ج.م</span></p>
                             </div>
                         </div>
                         <div className="space-y-3">
@@ -120,7 +121,7 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({ salesReps = [], refresh
                                 {rep.monthlyHistory && rep.monthlyHistory.length > 0 ? rep.monthlyHistory.map((h, i) => (
                                     <div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl mb-2 border border-gray-100">
                                         <span className="text-xs font-bold text-gray-600">{h.month}</span>
-                                        <span className="text-xs font-black text-emerald-600">{(h.amount || 0).toLocaleString()} ج.م</span>
+                                        <span className="text-xs font-black text-emerald-600">{(Number(h.amount) || 0).toLocaleString()} ج.م</span>
                                     </div>
                                 )) : <p className="text-[10px] text-center text-gray-300 py-4">لا يوجد سجل تاريخي بعد</p>}
                             </div>
