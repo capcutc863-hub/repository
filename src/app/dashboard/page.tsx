@@ -2,16 +2,18 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
-  Package, UserCircle, ChevronRight, Info, UserPlus, Users as UsersIcon, DatabaseBackup
+  Package, UserCircle, ChevronRight, Info, UserPlus, Users as UsersIcon, DatabaseBackup, AlertTriangle
 } from 'lucide-react';
 import type { User, SalesRep, Product, Order, Customer, UserRole } from '@/lib/types';
 import Dashboard from '@/components/dashboard/dashboard';
 import { createClient } from '@/lib/supabase';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const LoginPage: React.FC = () => {
     const supabase = createClient();
     const [loginUsername, setLoginUsername] = useState('');
     const [authLoading, setAuthLoading] = useState(false);
+    const [dbError, setDbError] = useState<string | null>(null);
     
     // App state
     const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -28,8 +30,17 @@ const LoginPage: React.FC = () => {
     const fetchInitialUsers = async () => {
         try {
             const { data, error } = await supabase.from('users').select('username');
+            if (error) {
+                if (error.message.includes('relation "users" does not exist')) {
+                    setDbError("قاعدة البيانات جديدة. يرجى الضغط على زر 'إضافة الحسابات الافتراضية' لإنشاء الجداول.");
+                } else {
+                    setDbError("خطأ في الاتصال بقاعدة البيانات. تأكد من أن المشروع يعمل على Supabase.");
+                }
+                return;
+            }
             if (data) {
                 setRegisteredUserNames(data.map(u => u.username));
+                setDbError(null);
             }
         } catch (err) {
             console.error("Error fetching user list:", err);
@@ -40,11 +51,11 @@ const LoginPage: React.FC = () => {
         setLoadingData(true);
         try {
             const [
-                { data: usersData, error: usersError },
-                { data: salesRepsData, error: salesRepsError },
-                { data: productsData, error: productsError },
-                { data: ordersData, error: ordersError },
-                { data: customersData, error: customersError }
+                { data: usersData },
+                { data: salesRepsData },
+                { data: productsData },
+                { data: ordersData },
+                { data: customersData }
             ] = await Promise.all([
                 supabase.from('users').select('*'),
                 supabase.from('sales_reps').select('*'),
@@ -164,10 +175,13 @@ const LoginPage: React.FC = () => {
     const handleSeedData = async () => {
         setAuthLoading(true);
         try {
+            // في حالة المشروع الجديد، لازم ننشئ الجداول الأول لو مش موجودة
+            // ملحوظة: عادة بنعمل ده عن طريق SQL Editor في Supabase
+            // بس هنا هنحاول نرفع البيانات فوراً لو الجداول موجودة
             const defaultUsers = [
-                { username: 'admin', name: 'المدير العام', role: 'admin' },
-                { username: 'sales', name: 'مندوب المبيعات', role: 'sales' },
-                { username: 'supervisor', name: 'مشرف النظام', role: 'supervisor' }
+                { username: 'admin', name: 'المدير العام', role: 'admin' as UserRole },
+                { username: 'sales', name: 'مندوب المبيعات', role: 'sales' as UserRole },
+                { username: 'supervisor', name: 'مشرف النظام', role: 'supervisor' as UserRole }
             ];
 
             for (const u of defaultUsers) {
@@ -194,7 +208,7 @@ const LoginPage: React.FC = () => {
             alert('تم إضافة الحسابات الافتراضية بنجاح ✅');
             fetchInitialUsers();
         } catch (err: any) {
-            alert(`فشل التثبيت: ${err.message}`);
+            alert(`فشل التثبيت: تأكد من إنشاء الجداول في Supabase SQL Editor أولاً. الخطأ: ${err.message}`);
         } finally {
             setAuthLoading(false);
         }
@@ -284,6 +298,16 @@ const LoginPage: React.FC = () => {
                 <h1 className="text-2xl font-black text-gray-900 mb-1">مؤسسة العطور الملكية</h1>
                 <p className="text-gray-400 font-bold mb-8 text-sm">تسجيل الدخول للنظام</p>
                 
+                {dbError && (
+                    <Alert variant="destructive" className="mb-6 rounded-2xl border-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle className="font-black">مشكلة في قاعدة البيانات</AlertTitle>
+                        <AlertDescription className="text-xs font-bold">
+                            {dbError}
+                        </AlertDescription>
+                    </Alert>
+                )}
+
                 <form onSubmit={handleLogin} className="w-full space-y-4">
                     <div className="space-y-1">
                         <label className="text-[10px] font-black text-gray-400 mr-2 uppercase">اسم المستخدم</label>
@@ -295,11 +319,11 @@ const LoginPage: React.FC = () => {
                             required
                         />
                     </div>
-                    <button type="submit" disabled={authLoading} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg hover:bg-emerald-700 shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    <button type="submit" disabled={authLoading || !!dbError} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg hover:bg-emerald-700 shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                        {authLoading ? 'جاري التحقق...' : 'دخول للنظام'}
                        <ChevronRight className="w-5 h-5"/>
                     </button>
-                    <button type="button" onClick={handleRegister} disabled={authLoading} className="w-full py-3 text-emerald-600 font-bold text-sm hover:underline">
+                    <button type="button" onClick={handleRegister} disabled={authLoading || !!dbError} className="w-full py-3 text-emerald-600 font-bold text-sm hover:underline">
                        تسجيل كمستخدم جديد
                     </button>
                 </form>
@@ -323,7 +347,7 @@ const LoginPage: React.FC = () => {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            <p className="text-[10px] text-gray-400 font-bold italic">قاعدة البيانات فارغة حالياً.</p>
+                            <p className="text-[10px] text-gray-400 font-bold italic">لا يوجد مستخدمين أو المشروع متوقف.</p>
                             <button 
                                 onClick={handleSeedData}
                                 className="w-full py-3 bg-amber-50 text-amber-700 rounded-xl text-xs font-black flex items-center justify-center gap-2 border border-amber-100 hover:bg-amber-100 transition-all"
