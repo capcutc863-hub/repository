@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
@@ -22,18 +23,18 @@ const LoginPage: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loadingData, setLoadingData] = useState(false);
 
-    const fetchInitialStatus = async () => {
-        try {
-            const { error } = await supabase.from('users').select('username').limit(1);
-            if (error) {
-                setDbError("فشل الاتصال بالمخزن الجديد. تأكد من إعدادات سوبابيز.");
-            } else {
-                setDbError(null);
+    // التحقق من حالة القاعدة
+    useEffect(() => {
+        const checkConnection = async () => {
+            try {
+                const { error } = await supabase.from('users').select('id').limit(1);
+                if (error) setDbError("تنبيه: فشل الاتصال بالمخزن الجديد.");
+            } catch (err) {
+                setDbError("خطأ في الشبكة.");
             }
-        } catch (err) {
-            console.error("Error connecting to DB:", err);
-        }
-    };
+        };
+        checkConnection();
+    }, []);
 
     const fetchData = async () => {
         setLoadingData(true);
@@ -111,17 +112,13 @@ const LoginPage: React.FC = () => {
                 lastOrderDate: c.last_order_date
             })));
             
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
             setLoadingData(false);
         }
     };
     
-    useEffect(() => {
-        fetchInitialStatus();
-    }, []);
-
     useEffect(() => {
         if (currentUser) {
             fetchData();
@@ -186,7 +183,7 @@ const LoginPage: React.FC = () => {
                 <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6" dir="rtl">
                     <div className="text-white text-center">
                         <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-                        <h1 className="text-xl font-bold">جاري تحميل البيانات من المخزن الجديد...</h1>
+                        <h1 className="text-xl font-bold font-cairo">جاري تحميل البيانات...</h1>
                     </div>
                 </div>
             );
