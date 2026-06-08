@@ -1,7 +1,8 @@
+
 'use client';
 import React, { useState } from 'react';
 import type { Order, OrderItem, Product, User, SalesRep } from '@/lib/types';
-import { X, PlusCircle, ShoppingCart, Plus, Trash2, Check } from 'lucide-react';
+import { X, PlusCircle, ShoppingCart, Plus, Trash2, Check, Percent } from 'lucide-react';
 
 interface OrderFormProps {
     order: Order | 'new';
@@ -35,35 +36,33 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
     const [itemQty, setItemQty] = useState('');
     const [itemPrice, setItemPrice] = useState('');
     
+    const subtotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
+    const discountAmount = (subtotal * discount) / 100;
+    const netTotal = subtotal - discountAmount;
+    
+    const effectiveRepId = (currentUser.role !== 'sales' ? selectedRepId : currentRep?.id);
+    const effectiveRep = salesReps.find(r => r.id === effectiveRepId);
+    const commissionRate = effectiveRep?.customCommissionRate || 0.05;
+    const estimatedCommission = netTotal * commissionRate;
+    
     const handleConfirmOrder = () => {
         if (!customerName || cart.length === 0 || !currentUser) {
             alert('الرجاء إدخال اسم العميل وإضافة أصناف للسلة.');
             return;
         }
     
-        const subtotal = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-        
-        const effectiveRepId = (currentUser.role !== 'sales' ? selectedRepId : currentRep?.id);
-        const effectiveRep = salesReps.find(r => r.id === effectiveRepId);
-        
         if (!effectiveRepId || !effectiveRep) {
             alert('لا يمكن إنشاء فاتورة بدون مندوب محدد.');
             return;
         }
         
         const maxDiscount = effectiveRep.maxDiscountAllowed || 0;
-    
         if (discount > maxDiscount) {
             alert(`لا يمكنك تجاوز نسبة الخصم المسموح بها للمندوب (${maxDiscount}%).`);
             return;
         }
     
-        const discountAmount = (subtotal * discount) / 100;
-        const totalAmount = subtotal - discountAmount + Number(shipping);
-        
-        // SAFE COMMISSION CALCULATION
-        const commissionRate = effectiveRep.customCommissionRate || 0.05; // Default to 5% if not set
-        const commission = (subtotal - discountAmount) * commissionRate;
+        const totalAmount = netTotal + Number(shipping);
         
         const orderData: Omit<Order, 'id' | 'createdAt' | 'salesRepName'> = {
             customerName, customerPhone, customerAddress, customerNotes,
@@ -74,7 +73,7 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
             shippingCost: Number(shipping),
             totalAmount,
             status: isEditing ? (order as Order).status : 'قيد التنفيذ',
-            commission,
+            commission: estimatedCommission,
             salesRepId: effectiveRepId,
         };
         
@@ -136,7 +135,7 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                 </div>
                 <div className="w-full md:w-[450px] bg-[#064E3B] p-12 text-white flex flex-col">
                     <h4 className="text-2xl font-black mb-10 flex items-center gap-3"><ShoppingCart className="text-emerald-400"/> مراجعة السلة</h4>
-                    <div className="flex-1 overflow-y-auto space-y-4 mb-10 pr-2 custom-scrollbar-dark">
+                    <div className="flex-1 overflow-y-auto space-y-4 mb-6 pr-2 custom-scrollbar-dark">
                         {cart.map((item, idx) => (
                             <div key={idx} className="bg-white/10 p-5 rounded-2xl border border-white/5 flex justify-between items-center group">
                                 <div className="flex-1">
@@ -147,11 +146,23 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                             </div>
                         ))}
                     </div>
-                    <div className="pt-8 border-t border-white/10 space-y-4 mb-10">
+                    
+                    <div className="bg-black/20 p-6 rounded-[2rem] border border-white/10 mb-8 space-y-3">
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="text-emerald-400 font-black">صافي المنتجات:</span>
+                            <span className="font-bold">{netTotal.toLocaleString()} ج.م</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                            <span className="text-indigo-400 font-black flex items-center gap-1"><Percent className="w-3 h-3"/> عمولة المندوب ({Math.round(commissionRate * 100)}%):</span>
+                            <span className="font-black text-indigo-300">{estimatedCommission.toLocaleString()} ج.م</span>
+                        </div>
+                    </div>
+
+                    <div className="pt-6 border-t border-white/10 space-y-4 mb-10">
                         <div className="flex justify-between items-center">
                             <span className="text-xl font-black text-emerald-100/50 uppercase">الإجمالي النهائي</span>
                             <span className="text-4xl font-black text-emerald-400">
-                                {(cart.reduce((s, i) => s + (i.price * i.quantity), 0) * (1 - (discount / 100)) + Number(shipping)).toLocaleString()}
+                                {(netTotal + Number(shipping)).toLocaleString()}
                             </span>
                         </div>
                     </div>
@@ -161,8 +172,3 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
         </div>
     );
 }
-
-
-    
-
-    

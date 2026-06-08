@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
@@ -20,7 +21,8 @@ const LoginPage: React.FC = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
-    const [loadingData, setLoadingData] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
 
     // التحقق من حالة الاتصال بالمخزن الجديد
     useEffect(() => {
@@ -35,8 +37,10 @@ const LoginPage: React.FC = () => {
         checkConnection();
     }, [supabase]);
 
-    const fetchData = async () => {
-        setLoadingData(true);
+    const fetchData = async (isInitial = false) => {
+        if (isInitial) setInitialLoading(true);
+        else setRefreshing(true);
+        
         try {
             const [
                 { data: usersData },
@@ -114,13 +118,14 @@ const LoginPage: React.FC = () => {
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
-            setLoadingData(false);
+            setInitialLoading(false);
+            setRefreshing(false);
         }
     };
     
     useEffect(() => {
         if (currentUser) {
-            fetchData();
+            fetchData(true);
         }
     }, [currentUser]);
 
@@ -177,7 +182,7 @@ const LoginPage: React.FC = () => {
     };
     
     if (currentUser) {
-        if (loadingData) {
+        if (initialLoading) {
              return (
                 <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6" dir="rtl">
                     <div className="text-white text-center">
@@ -202,7 +207,7 @@ const LoginPage: React.FC = () => {
             customers={customers}
             setCustomers={setCustomers}
             setCurrentUser={setCurrentUser}
-            refreshData={fetchData}
+            refreshData={() => fetchData(false)}
         />
       );
     }
