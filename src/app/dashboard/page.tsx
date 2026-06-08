@@ -1,4 +1,3 @@
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import {
@@ -23,18 +22,18 @@ const LoginPage: React.FC = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loadingData, setLoadingData] = useState(false);
 
-    // التحقق من حالة القاعدة
+    // التحقق من حالة الاتصال بالمخزن الجديد
     useEffect(() => {
         const checkConnection = async () => {
             try {
                 const { error } = await supabase.from('users').select('id').limit(1);
                 if (error) setDbError("تنبيه: فشل الاتصال بالمخزن الجديد.");
             } catch (err) {
-                setDbError("خطأ في الشبكة.");
+                setDbError("خطأ في الشبكة أو الاتصال.");
             }
         };
         checkConnection();
-    }, []);
+    }, [supabase]);
 
     const fetchData = async () => {
         setLoadingData(true);
@@ -76,7 +75,7 @@ const LoginPage: React.FC = () => {
                 maxDiscountAllowed: rep.max_discount_allowed, 
                 customCommissionRate: rep.custom_commission_rate, 
                 totalCommission: Number(rep.total_commission || 0), 
-                pending_commission: Number(rep.pending_commission || 0), 
+                pendingCommission: Number(rep.pending_commission || 0), 
                 ordersCount: Number(rep.orders_count || 0), 
                 monthlyHistory: rep.monthly_history || [] 
             })));
@@ -98,7 +97,7 @@ const LoginPage: React.FC = () => {
                 customerAddress: o.customer_address,
                 customerNotes: o.customer_notes,
                 discountPercentage: Number(o.discount_percentage || 0),
-                discount_amount: Number(o.discount_amount || 0),
+                discountAmount: Number(o.discount_amount || 0),
                 shippingCost: Number(o.shipping_cost || 0),
                 totalAmount: Number(o.total_amount || 0),
                 subtotal: Number(o.subtotal || 0),
@@ -158,10 +157,10 @@ const LoginPage: React.FC = () => {
                     });
                 }
             } else {
-                alert('اسم المستخدم غير موجود.');
+                alert('اسم المستخدم غير صحيح أو غير موجود.');
             }
         } catch (err: any) {
-            alert(`خطأ: ${err.message}`);
+            alert(`خطأ في الدخول: ${err.message}`);
         } finally {
             setAuthLoading(false);
         }
@@ -183,7 +182,7 @@ const LoginPage: React.FC = () => {
                 <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6" dir="rtl">
                     <div className="text-white text-center">
                         <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-                        <h1 className="text-xl font-bold font-cairo">جاري تحميل البيانات...</h1>
+                        <h1 className="text-xl font-bold font-cairo">جاري تحميل البيانات من المخزن الجديد...</h1>
                     </div>
                 </div>
             );
@@ -213,7 +212,7 @@ const LoginPage: React.FC = () => {
             <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl flex flex-col items-center animate-in zoom-in">
                 <div className="bg-emerald-500 p-5 rounded-2xl shadow-xl mb-6"><Package className="w-10 h-10 text-white" /></div>
                 <h1 className="text-2xl font-black text-gray-900 mb-1">مؤسسة العطور الملكية</h1>
-                <p className="text-gray-400 font-bold mb-8 text-sm">نظام الإدارة المطور</p>
+                <p className="text-gray-400 font-bold mb-8 text-sm">نظام الإدارة المطور - المخزن الجديد</p>
                 
                 {dbError && (
                     <Alert variant="destructive" className="mb-6 rounded-2xl border-2">
@@ -232,6 +231,7 @@ const LoginPage: React.FC = () => {
                             placeholder="اكتب اسم المستخدم هنا..."
                             className="w-full p-4 bg-gray-50 rounded-2xl outline-none font-bold text-emerald-900 border-2 border-transparent focus:border-emerald-500 transition-all shadow-sm"
                             required
+                            autoFocus
                         />
                     </div>
                     <button type="submit" disabled={authLoading} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg hover:bg-emerald-700 shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
@@ -241,7 +241,7 @@ const LoginPage: React.FC = () => {
                 </form>
 
                 <div className="mt-12 text-center">
-                    <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">المخزن الجديد مفعل ✅</p>
+                    <p className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">جميع البيانات مشفرة وآمنة ✅</p>
                 </div>
             </div>
         </div>
