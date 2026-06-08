@@ -31,7 +31,7 @@ const LoginPage: React.FC = () => {
             const { data, error } = await supabase.from('users').select('username');
             if (error) {
                 console.error("Supabase Error:", error);
-                setDbError("فشل الاتصال بقاعدة البيانات الجديدة. تأكد من رفع الـ Backup بنجاح.");
+                setDbError("فشل الاتصال بقاعدة البيانات. تأكد من رفع الـ Backup بنجاح.");
                 return;
             }
             if (data) {
@@ -159,7 +159,7 @@ const LoginPage: React.FC = () => {
                     });
                 }
             } else {
-                alert('اسم المستخدم غير موجود في المخزن الجديد.');
+                alert('اسم المستخدم غير موجود.');
             }
         } catch (err: any) {
             alert(`خطأ: ${err.message}`);
@@ -185,7 +185,7 @@ const LoginPage: React.FC = () => {
                 <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6" dir="rtl">
                     <div className="text-white text-center">
                         <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-                        <h1 className="text-xl font-bold">جاري تحميل البيانات من المخزن الجديد...</h1>
+                        <h1 className="text-xl font-bold">جاري تحميل البيانات...</h1>
                     </div>
                 </div>
             );
@@ -258,7 +258,7 @@ const LoginPage: React.FC = () => {
                                 {name}
                             </button>
                         )) : (
-                            <p className="text-xs text-gray-300 font-bold">لا يوجد مستخدمون. تأكد من الضغط على Run في سوبابيز.</p>
+                            <p className="text-xs text-gray-300 font-bold">جاري تحميل قائمة المستخدمين...</p>
                         )}
                     </div>
                 </div>
