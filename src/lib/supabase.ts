@@ -2,15 +2,20 @@ import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
   /**
-   * تعليمات هامة:
-   * بمجرد إنشاء مشروع Supabase الجديد، قم بنسخ الـ URL والـ Anon Key
-   * وضعهما مكان القيم الموجودة أدناه.
+   * تعليمات هامة للربط:
+   * 1. بعد إنشاء المشروع، اذهب لـ Project Settings ثم API.
+   * 2. انسخ Project URL وضعه مكان الرابط أدناه.
+   * 3. انسخ anon public key وضعه مكان المفتاح أدناه.
    */
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-new-project.supabase.co';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-new-anon-key';
+  
+  // ضع الرابط الجديد هنا بين العلامتين ''
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://your-project-url.supabase.co';
+  
+  // ضع المفتاح الجديد هنا بين العلامتين ''
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key';
 
-  if (supabaseUrl.includes('your-new-project')) {
-    console.warn('تنبيه: بانتظار وضع مفاتيح Supabase الجديدة في سطر 10 و 11...');
+  if (supabaseUrl.includes('your-project-url')) {
+    console.warn('تنبيه: بانتظار إدخال بيانات مشروع Supabase الجديد في ملف src/lib/supabase.ts');
   }
 
   return createBrowserClient(supabaseUrl, supabaseAnonKey);
