@@ -30,11 +30,8 @@ const LoginPage: React.FC = () => {
         try {
             const { data, error } = await supabase.from('users').select('username');
             if (error) {
-                if (error.message.includes('relation "users" does not exist')) {
-                    setDbError("قاعدة البيانات فارغة تماماً. يرجى رفع ملف الـ Backup في SQL Editor الخاص بـ Supabase.");
-                } else {
-                    setDbError("فشل الاتصال بـ Supabase. تأكد من إعدادات الربط.");
-                }
+                console.error("Supabase Error:", error);
+                setDbError("فشل الاتصال بقاعدة البيانات. تأكد من إعدادات الربط.");
                 return;
             }
             if (data) {
@@ -105,7 +102,7 @@ const LoginPage: React.FC = () => {
                 customerNotes: o.customer_notes,
                 discountPercentage: o.discount_percentage,
                 discountAmount: o.discount_amount,
-                shipping_cost: o.shipping_cost,
+                shippingCost: o.shipping_cost,
                 totalAmount: o.total_amount,
             })));
             
@@ -162,7 +159,7 @@ const LoginPage: React.FC = () => {
                     });
                 }
             } else {
-                alert('اسم المستخدم غير موجود. تأكد من رفع ملف الـ Backup.');
+                alert('اسم المستخدم غير موجود. تأكد من أنك قمت برفع ملف الـ Backup بشكل صحيح.');
             }
         } catch (err: any) {
             alert(`خطأ: ${err.message}`);
@@ -223,7 +220,7 @@ const LoginPage: React.FC = () => {
                 {dbError && (
                     <Alert variant="destructive" className="mb-6 rounded-2xl border-2">
                         <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle className="font-black">قاعدة البيانات غير جاهزة</AlertTitle>
+                        <AlertTitle className="font-black">تنبيه النظام</AlertTitle>
                         <AlertDescription className="text-xs font-bold">
                             {dbError}
                         </AlertDescription>
@@ -261,7 +258,7 @@ const LoginPage: React.FC = () => {
                                 {name}
                             </button>
                         )) : (
-                            <p className="text-xs text-gray-300 font-bold">لا يوجد مستخدمون حالياً.</p>
+                            <p className="text-xs text-gray-300 font-bold">لا يوجد مستخدمون حالياً. يرجى التأكد من رفع الـ Backup.</p>
                         )}
                     </div>
                 </div>
