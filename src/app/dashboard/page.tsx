@@ -32,9 +32,9 @@ const LoginPage: React.FC = () => {
             const { data, error } = await supabase.from('users').select('username');
             if (error) {
                 if (error.message.includes('relation "users" does not exist')) {
-                    setDbError("قاعدة البيانات جديدة. يرجى الضغط على زر 'إضافة الحسابات الافتراضية' لإنشاء الجداول.");
+                    setDbError("قاعدة البيانات جديدة تماماً. يرجى الضغط على الزرار بالأسفل لإنشاء الجداول والحسابات.");
                 } else {
-                    setDbError("خطأ في الاتصال بقاعدة البيانات. تأكد من أن المشروع يعمل على Supabase.");
+                    setDbError("فشل الاتصال بـ Supabase. تأكد من وضع الـ Key والـ URL الجديد في ملف .env");
                 }
                 return;
             }
@@ -163,7 +163,7 @@ const LoginPage: React.FC = () => {
                     });
                 }
             } else {
-                alert('اسم المستخدم غير موجود. تأكد من القائمة بالأسفل.');
+                alert('اسم المستخدم غير موجود. تأكد من الضغط على زر "إضافة الحسابات الافتراضية" أولاً.');
             }
         } catch (err: any) {
             alert(`خطأ: ${err.message}`);
@@ -175,9 +175,7 @@ const LoginPage: React.FC = () => {
     const handleSeedData = async () => {
         setAuthLoading(true);
         try {
-            // في حالة المشروع الجديد، لازم ننشئ الجداول الأول لو مش موجودة
-            // ملحوظة: عادة بنعمل ده عن طريق SQL Editor في Supabase
-            // بس هنا هنحاول نرفع البيانات فوراً لو الجداول موجودة
+            // إضافة الحسابات الأساسية
             const defaultUsers = [
                 { username: 'admin', name: 'المدير العام', role: 'admin' as UserRole },
                 { username: 'sales', name: 'مندوب المبيعات', role: 'sales' as UserRole },
@@ -205,10 +203,10 @@ const LoginPage: React.FC = () => {
                     });
                 }
             }
-            alert('تم إضافة الحسابات الافتراضية بنجاح ✅');
+            alert('تم إنشاء الحسابات بنجاح! جرب الدخول بكلمة admin الآن ✅');
             fetchInitialUsers();
         } catch (err: any) {
-            alert(`فشل التثبيت: تأكد من إنشاء الجداول في Supabase SQL Editor أولاً. الخطأ: ${err.message}`);
+            alert(`فشل التثبيت: ${err.message}`);
         } finally {
             setAuthLoading(false);
         }
@@ -319,44 +317,38 @@ const LoginPage: React.FC = () => {
                             required
                         />
                     </div>
-                    <button type="submit" disabled={authLoading || !!dbError} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg hover:bg-emerald-700 shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    <button type="submit" disabled={authLoading} className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black text-lg hover:bg-emerald-700 shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                        {authLoading ? 'جاري التحقق...' : 'دخول للنظام'}
                        <ChevronRight className="w-5 h-5"/>
                     </button>
-                    <button type="button" onClick={handleRegister} disabled={authLoading || !!dbError} className="w-full py-3 text-emerald-600 font-bold text-sm hover:underline">
+                    <button type="button" onClick={handleRegister} disabled={authLoading} className="w-full py-3 text-emerald-600 font-bold text-sm hover:underline">
                        تسجيل كمستخدم جديد
                     </button>
                 </form>
 
-                {/* Registered Users List */}
                 <div className="mt-8 w-full border-t pt-6">
                     <h3 className="text-[10px] font-black text-gray-400 mb-3 uppercase flex items-center gap-2">
-                        <UsersIcon className="w-3 h-3"/> المستخدمون المسجلون:
+                        <UsersIcon className="w-3 h-3"/> المستخدمون المتاحون:
                     </h3>
-                    {registeredUserNames.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                            {registeredUserNames.map(name => (
-                                <button 
-                                    key={name} 
-                                    onClick={() => setLoginUsername(name)}
-                                    className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-black hover:bg-emerald-100 border border-emerald-100"
-                                >
-                                    {name}
-                                </button>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <p className="text-[10px] text-gray-400 font-bold italic">لا يوجد مستخدمين أو المشروع متوقف.</p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {registeredUserNames.map(name => (
                             <button 
-                                onClick={handleSeedData}
-                                className="w-full py-3 bg-amber-50 text-amber-700 rounded-xl text-xs font-black flex items-center justify-center gap-2 border border-amber-100 hover:bg-amber-100 transition-all"
+                                key={name} 
+                                onClick={() => setLoginUsername(name)}
+                                className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-black hover:bg-emerald-100 border border-emerald-100"
                             >
-                                <DatabaseBackup className="w-4 h-4"/>
-                                إضافة الحسابات الافتراضية (admin, sales, supervisor)
+                                {name}
                             </button>
-                        </div>
-                    )}
+                        ))}
+                    </div>
+                    
+                    <button 
+                        onClick={handleSeedData}
+                        className="w-full py-4 bg-amber-100 text-amber-900 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border-2 border-amber-200 hover:bg-amber-200 transition-all shadow-lg animate-pulse"
+                    >
+                        <DatabaseBackup className="w-5 h-5"/>
+                        إضافة الحسابات الافتراضية (admin, sales, supervisor)
+                    </button>
                 </div>
             </div>
         </div>
