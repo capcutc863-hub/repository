@@ -1,7 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
-  // الرابط الجديد - تم تنظيفه ليعمل بشكل صحيح (حذف rest/v1 الزائدة)
+  // الرابط الجديد - تم تنظيفه ليعمل بشكل صحيح (بدون المسارات الزائدة)
   const supabaseUrl = 'https://hyyznzimuavvukjamxmu.supabase.co';
   
   // المفتاح (Anon Key)

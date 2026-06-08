@@ -31,9 +31,9 @@ const LoginPage: React.FC = () => {
             const { data, error } = await supabase.from('users').select('username');
             if (error) {
                 if (error.message.includes('relation "users" does not exist')) {
-                    setDbError("قاعدة البيانات فارغة تماماً. يرجى رفع ملف الـ Backup (SQL) في لوحة تحكم Supabase لاسترجاع بياناتك.");
+                    setDbError("قاعدة البيانات فارغة تماماً. يرجى رفع ملف الـ Backup في SQL Editor الخاص بـ Supabase.");
                 } else {
-                    setDbError("فشل الاتصال بـ Supabase. تأكد من صحة المفاتيح في ملف supabase.ts");
+                    setDbError("فشل الاتصال بـ Supabase. تأكد من إعدادات الربط.");
                 }
                 return;
             }
@@ -105,7 +105,7 @@ const LoginPage: React.FC = () => {
                 customerNotes: o.customer_notes,
                 discountPercentage: o.discount_percentage,
                 discountAmount: o.discount_amount,
-                shippingCost: o.shipping_cost,
+                shipping_cost: o.shipping_cost,
                 totalAmount: o.total_amount,
             })));
             
@@ -162,7 +162,7 @@ const LoginPage: React.FC = () => {
                     });
                 }
             } else {
-                alert('اسم المستخدم غير موجود. تأكد من رفع ملف الـ Backup أو التسجيل كجديد.');
+                alert('اسم المستخدم غير موجود. تأكد من رفع ملف الـ Backup.');
             }
         } catch (err: any) {
             alert(`خطأ: ${err.message}`);
@@ -171,80 +171,6 @@ const LoginPage: React.FC = () => {
         }
     };
 
-    const handleSeedData = async () => {
-        setAuthLoading(true);
-        try {
-            const defaultUsers = [
-                { username: 'admin', name: 'المدير العام', role: 'admin' as UserRole },
-                { username: 'sales', name: 'مندوب المبيعات', role: 'sales' as UserRole },
-                { username: 'supervisor', name: 'مشرف النظام', role: 'supervisor' as UserRole }
-            ];
-
-            for (const u of defaultUsers) {
-                const { data: userData, error: userError } = await supabase.from('users').insert({
-                    username: u.username,
-                    name: u.name,
-                    nickname: u.username,
-                    role: u.role,
-                    online: false,
-                    is_suspended: false,
-                    can_edit_inventory: u.role !== 'sales',
-                    can_confirm_delivery: u.role !== 'sales',
-                }).select().single();
-
-                if (!userError && userData && u.role === 'sales') {
-                    await supabase.from('sales_reps').insert({
-                        user_id: userData.id,
-                        name: userData.name,
-                        total_commission: 0,
-                        pending_commission: 0
-                    });
-                }
-            }
-            alert('تم إنشاء الحسابات بنجاح! جرب الدخول بـ admin الآن ✅');
-            fetchInitialUsers();
-        } catch (err: any) {
-            alert(`فشل التثبيت: ${err.message}. تأكد من إنشاء الجداول أولاً (برفع الـ Backup).`);
-        } finally {
-            setAuthLoading(false);
-        }
-    };
-
-    const handleRegister = async () => {
-        const usernameInput = loginUsername.trim().toLowerCase();
-        if (!usernameInput) {
-            alert('يرجى إدخال اسم مستخدم.');
-            return;
-        }
-        setAuthLoading(true);
-
-        try {
-            const role: UserRole = usernameInput === 'admin' ? 'admin' : 'sales';
-            const { data, error } = await supabase.from('users').insert({
-                username: usernameInput,
-                name: usernameInput,
-                nickname: usernameInput,
-                role: role,
-                online: true
-            }).select().single();
-
-            if (error) throw error;
-
-            if (data && role === 'sales') {
-                await supabase.from('sales_reps').insert({
-                    user_id: data.id,
-                    name: data.name
-                });
-            }
-            fetchInitialUsers();
-            alert('تم التسجيل بنجاح! يمكنك الدخول الآن.');
-        } catch (err: any) {
-            alert(`فشل التسجيل: ${err.message}`);
-        } finally {
-            setAuthLoading(false);
-        }
-    };
-    
     const handleLogout = async () => {
         if(currentUser) {
             setAuthLoading(true);
@@ -319,9 +245,6 @@ const LoginPage: React.FC = () => {
                        {authLoading ? 'جاري التحقق...' : 'دخول للنظام'}
                        <ChevronRight className="w-5 h-5"/>
                     </button>
-                    <button type="button" onClick={handleRegister} disabled={authLoading} className="w-full py-3 text-emerald-600 font-bold text-sm hover:underline">
-                       تسجيل كمستخدم جديد
-                    </button>
                 </form>
 
                 <div className="mt-8 w-full border-t pt-6">
@@ -341,14 +264,6 @@ const LoginPage: React.FC = () => {
                             <p className="text-xs text-gray-300 font-bold">لا يوجد مستخدمون حالياً.</p>
                         )}
                     </div>
-                    
-                    <button 
-                        onClick={handleSeedData}
-                        className="w-full py-4 bg-amber-100 text-amber-900 rounded-2xl text-xs font-black flex items-center justify-center gap-2 border-2 border-amber-200 hover:bg-amber-200 transition-all shadow-lg"
-                    >
-                        <DatabaseBackup className="w-5 h-5"/>
-                        إنشاء الحسابات الأساسية (admin, sales)
-                    </button>
                 </div>
             </div>
         </div>
