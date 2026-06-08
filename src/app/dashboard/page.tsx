@@ -32,9 +32,9 @@ const LoginPage: React.FC = () => {
             const { data, error } = await supabase.from('users').select('username');
             if (error) {
                 if (error.message.includes('relation "users" does not exist')) {
-                    setDbError("قاعدة البيانات لا تحتوي على جداول. يرجى رفع ملف الـ Backup أو الضغط على زرار الإنشاء بالأسفل.");
+                    setDbError("قاعدة البيانات فارغة تماماً. يرجى رفع ملف الـ Backup (SQL) في لوحة تحكم Supabase لاسترجاع بياناتك.");
                 } else {
-                    setDbError("فشل الاتصال بـ Supabase. تأكد من وضع المفاتيح الجديدة في ملف supabase.ts أو .env");
+                    setDbError("فشل الاتصال بـ Supabase. تأكد من صحة المفاتيح في ملف supabase.ts");
                 }
                 return;
             }

@@ -1,10 +1,11 @@
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
-  // الرابط الجديد للمشروع
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hyyznzimuavvukjamxmu.supabase.co';
+  // تنظيف الرابط من أي زوائد لضمان عمله بشكل صحيح
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hyyznzimuavvukjamxmu.supabase.co';
+  const supabaseUrl = rawUrl.replace(/\/rest\/v1\/?$/, ''); // إزالة /rest/v1 لو موجودة
   
-  // المفتاح الجديد (Anon Key)
+  // المفتاح الجديد (Anon Key) اللي إنت بعته
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh5eXpuemltdWF2dnVramFteG11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NjM5MzUsImV4cCI6MjA5NjQzOTkzNX0.491deX9FQYQG7l9H-UyQbKpyLtUX5T4hJOF0Uao1Yqk';
 
   return createBrowserClient(supabaseUrl, supabaseAnonKey);
