@@ -42,7 +42,9 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
     const effectiveRepId = (currentUser.role !== 'sales' ? selectedRepId : currentRep?.id);
     const effectiveRep = salesReps.find(r => r.id === effectiveRepId);
     const commissionRate = effectiveRep?.customCommissionRate || 0.05;
-    const estimatedCommission = netTotal * commissionRate;
+    
+    // نقوم بتقريب العمولة لأقرب خانتين عشريتين (قروش)
+    const estimatedCommission = Math.round((netTotal * commissionRate) * 100) / 100;
     
     const handleConfirmOrder = () => {
         if (!customerName || cart.length === 0 || !currentUser) {
@@ -79,7 +81,12 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
         onSave(orderData, isEditing ? (order as Order).id : undefined);
     };
 
-    const formatCurrency = (val: number) => val.toLocaleString('ar-EG');
+    const formatAmount = (val: number) => {
+        return val.toLocaleString('en-US', { 
+            minimumFractionDigits: 0, 
+            maximumFractionDigits: 2 
+        });
+    };
 
     return (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 z-[300] overflow-y-auto no-print">
@@ -157,7 +164,7 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                             <div key={idx} className="bg-white/10 p-6 rounded-2xl border border-white/5 flex justify-between items-center group hover:bg-white/15 transition-all">
                                 <div className="flex-1">
                                     <p className="font-black text-emerald-50 truncate text-base">{item.productName}</p>
-                                    <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">{item.quantity} mg × {formatCurrency(item.price)} ج.م</p>
+                                    <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest">{item.quantity} mg × {formatAmount(item.price)} ج.م</p>
                                 </div>
                                 <button onClick={() => setCart(cart.filter((_, i) => i !== idx))} className="text-red-400 p-3 hover:bg-red-500/20 rounded-xl transition-all"><Trash2 className="w-5 h-5"/></button>
                             </div>
@@ -168,7 +175,7 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                     <div className="bg-black/20 p-8 rounded-[2.5rem] border border-white/10 mb-8 space-y-4 relative z-10">
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-emerald-400 font-black uppercase tracking-widest">صافي المنتجات:</span>
-                            <span className="font-black text-white text-lg">{formatCurrency(netTotal)} ج.م</span>
+                            <span className="font-black text-white text-lg">{formatAmount(netTotal)} ج.م</span>
                         </div>
                         <div className="flex justify-between items-center text-sm border-t border-white/5 pt-4">
                             <span className="text-indigo-400 font-black flex items-center gap-2"><Percent className="w-4 h-4"/> عمولة المندوب ({Math.round(commissionRate * 100)}%):</span>
@@ -199,5 +206,3 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
         </div>
     );
 }
-
-const formatAmount = (val: number) => val.toLocaleString('ar-EG');

@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useRef } from 'react';
 import type { Order, OrderStatus, SalesRep, User } from '@/lib/types';
@@ -22,6 +23,13 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, salesRep
     const [selectedOrderForPrint, setSelectedOrderForPrint] = useState<Order | null>(null);
     const receiptRef = useRef<HTMLDivElement>(null);
     const [exporting, setExporting] = useState(false);
+
+    const formatAmount = (val: number) => {
+        return val.toLocaleString('en-US', { 
+            minimumFractionDigits: 0, 
+            maximumFractionDigits: 2 
+        });
+    };
 
     const filteredOrders = useMemo(() => {
         let displayOrders = orders;
@@ -119,9 +127,9 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, salesRep
                             <tr key={o.id} className="hover:bg-gray-50/50 transition-all">
                                 <td className="p-8">
                                     <p className="font-black text-emerald-950">{o.customerName}</p>
-                                    <p className="text-[10px] text-gray-400 font-bold">#{o.id.substring(0,6)} • {new Date(o.createdAt).toLocaleDateString('ar-EG')}</p>
+                                    <p className="text-[10px] text-gray-400 font-bold">#{o.id.substring(0,6)} • {new Date(o.createdAt).toLocaleDateString('en-US')}</p>
                                 </td>
-                                <td className="p-8 text-center font-black text-emerald-900">{o.totalAmount.toLocaleString()} ج.م</td>
+                                <td className="p-8 text-center font-black text-emerald-900">{formatAmount(o.totalAmount)} ج.م</td>
                                 <td className="p-8 text-center text-xs font-black text-gray-500">{o.salesRepName}</td>
                                 <td className="p-8 text-center">
                                     <select 

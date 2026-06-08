@@ -39,7 +39,12 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ currentUser, salesReps = []
         };
     }, [orders, salesReps, currentUser]);
 
-    const formatAmount = (val: number) => val.toLocaleString('ar-EG');
+    const formatAmount = (val: number) => {
+        return val.toLocaleString('en-US', { 
+            minimumFractionDigits: 0, 
+            maximumFractionDigits: 2 
+        });
+    };
 
     return (
         <div className="space-y-10 animate-in fade-in">

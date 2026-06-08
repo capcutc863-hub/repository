@@ -11,7 +11,7 @@ interface OrderReceiptProps {
 
 export const OrderReceipt: React.FC<OrderReceiptProps> = ({ order }) => {
     const formatDate = (date: Date | string) => {
-        return new Date(date).toLocaleDateString('ar-EG', {
+        return new Date(date).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
@@ -19,7 +19,7 @@ export const OrderReceipt: React.FC<OrderReceiptProps> = ({ order }) => {
     };
 
     const formatCurrency = (amount: number) => {
-        return amount.toLocaleString('ar-EG', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        return amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     };
 
     return (

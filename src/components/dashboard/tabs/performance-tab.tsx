@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import type { SalesRep } from '@/lib/types';
@@ -11,6 +12,13 @@ interface PerformanceTabProps {
 
 const PerformanceTab: React.FC<PerformanceTabProps> = ({ salesReps = [], refreshData }) => {
     const supabase = createClient();
+
+    const formatAmount = (val: number) => {
+        return val.toLocaleString('en-US', { 
+            minimumFractionDigits: 0, 
+            maximumFractionDigits: 2 
+        });
+    };
     
     const handleSalesRepUpdate = async (repId: string, field: 'maxDiscountAllowed' | 'customCommissionRate', value: any) => {
         let updateValue = field === 'customCommissionRate' ? parseFloat(value) / 100 : Number(value);
@@ -108,11 +116,11 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({ salesReps = [], refresh
                         <div className="grid grid-cols-2 gap-4 mb-8">
                             <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
                                 <p className="text-[10px] text-indigo-400 font-black uppercase mb-1">مكتسبة (تم التسليم)</p>
-                                <p className="text-xl font-black text-indigo-700">{(Number(rep.totalCommission) || 0).toLocaleString()} <span className="text-xs">ج.م</span></p>
+                                <p className="text-xl font-black text-indigo-700">{formatAmount(rep.totalCommission)} <span className="text-xs">ج.م</span></p>
                             </div>
                             <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
                                 <p className="text-[10px] text-amber-400 font-black uppercase mb-1">معلقة (قيد التنفيذ)</p>
-                                <p className="text-xl font-black text-amber-700">{(Number(rep.pendingCommission) || 0).toLocaleString()} <span className="text-xs">ج.م</span></p>
+                                <p className="text-xl font-black text-amber-700">{formatAmount(rep.pendingCommission)} <span className="text-xs">ج.م</span></p>
                             </div>
                         </div>
                         <div className="space-y-3">
@@ -121,7 +129,7 @@ const PerformanceTab: React.FC<PerformanceTabProps> = ({ salesReps = [], refresh
                                 {rep.monthlyHistory && rep.monthlyHistory.length > 0 ? rep.monthlyHistory.map((h, i) => (
                                     <div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl mb-2 border border-gray-100">
                                         <span className="text-xs font-bold text-gray-600">{h.month}</span>
-                                        <span className="text-xs font-black text-emerald-600">{(Number(h.amount) || 0).toLocaleString()} ج.م</span>
+                                        <span className="text-xs font-black text-emerald-600">{formatAmount(h.amount)} ج.م</span>
                                     </div>
                                 )) : <p className="text-[10px] text-center text-gray-300 py-4">لا يوجد سجل تاريخي بعد</p>}
                             </div>

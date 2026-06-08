@@ -37,7 +37,8 @@ const LoginPage: React.FC = () => {
     }, [supabase]);
 
     const fetchData = async (isInitial = false) => {
-        if (isInitial) setInitialLoading(true);
+        // نضع شاشة التحميل فقط في المرة الأولى تماماً
+        if (isInitial && orders.length === 0) setInitialLoading(true);
         
         try {
             const [
@@ -116,7 +117,7 @@ const LoginPage: React.FC = () => {
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
-            if (isInitial) setInitialLoading(false);
+            setInitialLoading(false);
         }
     };
     
@@ -184,7 +185,7 @@ const LoginPage: React.FC = () => {
                 <div className="h-screen bg-[#064E3B] flex items-center justify-center p-6" dir="rtl">
                     <div className="text-white text-center">
                         <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-                        <h1 className="text-xl font-bold font-cairo">جاري تحميل البيانات من المخزن الجديد...</h1>
+                        <h1 className="text-xl font-bold font-cairo">جاري تحميل البيانات...</h1>
                     </div>
                 </div>
             );

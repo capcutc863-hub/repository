@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
@@ -76,6 +77,13 @@ const Dashboard: React.FC<DashboardProps> = ({
         [salesReps, currentUser]
     );
 
+    const formatAmount = (val: number) => {
+        return val.toLocaleString('en-US', { 
+            minimumFractionDigits: 0, 
+            maximumFractionDigits: 2 
+        });
+    };
+
     const handleDownloadBackup = () => {
         const backupData = {
             exportDate: new Date().toISOString(),
@@ -89,7 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `backup_royal_perfumes_${new Date().toLocaleDateString('ar-EG').replace(/\//g, '-')}.json`;
+        link.download = `backup_royal_perfumes_${new Date().toLocaleDateString('en-US').replace(/\//g, '-')}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
