@@ -27,7 +27,7 @@ const LoginPage: React.FC = () => {
         try {
             const { data, error } = await supabase.from('users').select('username').order('username');
             if (error) {
-                setDbError("فشل الاتصال بالمخزن الجديد. تأكد من تفعيل الجداول في SQL Editor.");
+                setDbError("فشل الاتصال بالمخزن. تأكد من تفعيل الجداول في سوبابيز.");
                 return;
             }
             if (data) {
@@ -79,7 +79,7 @@ const LoginPage: React.FC = () => {
                 maxDiscountAllowed: rep.max_discount_allowed, 
                 customCommissionRate: rep.custom_commission_rate, 
                 totalCommission: Number(rep.total_commission || 0), 
-                pendingCommission: Number(rep.pending_commission || 0), 
+                pending_commission: Number(rep.pending_commission || 0), 
                 ordersCount: Number(rep.orders_count || 0), 
                 monthlyHistory: rep.monthly_history || [] 
             })));
@@ -221,7 +221,7 @@ const LoginPage: React.FC = () => {
             <div className="bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl flex flex-col items-center animate-in zoom-in">
                 <div className="bg-emerald-500 p-5 rounded-2xl shadow-xl mb-6"><Package className="w-10 h-10 text-white" /></div>
                 <h1 className="text-2xl font-black text-gray-900 mb-1">مؤسسة العطور الملكية</h1>
-                <p className="text-gray-400 font-bold mb-8 text-sm">تسجيل الدخول (المخزن المحدث)</p>
+                <p className="text-gray-400 font-bold mb-8 text-sm">تسجيل الدخول (المخزن الجديد)</p>
                 
                 {dbError && (
                     <Alert variant="destructive" className="mb-6 rounded-2xl border-2">
@@ -262,7 +262,7 @@ const LoginPage: React.FC = () => {
                                 {name}
                             </button>
                         )) : (
-                            <p className="text-xs text-gray-300 font-bold">جاري تحميل القائمة من المخزن الجديد...</p>
+                            <p className="text-xs text-gray-300 font-bold">جاري تحميل القائمة...</p>
                         )}
                     </div>
                 </div>

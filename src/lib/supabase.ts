@@ -1,7 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
-  // الرابط الجديد للمخزن الجديد (تم تنظيفه ليعمل بشكل مثالي)
+  // الرابط الجديد للمخزن الجديد
   const supabaseUrl = 'https://hyyznzimuavvukjamxmu.supabase.co';
   
   // المفتاح العام (Anon Key) للمخزن الجديد
