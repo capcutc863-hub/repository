@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   LayoutDashboard, ShoppingCart, Users, Package, TrendingUp, PlusCircle,
-  X, LogOut, UserCircle, MessageSquare, Edit3, Star
+  X, LogOut, UserCircle, MessageSquare, Edit3, Star, Download, ShieldCheck
 } from 'lucide-react';
 import type { User, SalesRep, Product, Order as OrderType, Customer } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
@@ -50,6 +50,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     orders,
     setOrders,
     customers,
+    setCustomers,
     setCurrentUser,
     refreshData,
 }) => {
@@ -67,6 +68,27 @@ const Dashboard: React.FC<DashboardProps> = ({
         salesReps.find(r => r.userId === currentUser?.id),
         [salesReps, currentUser]
     );
+
+    // ميزة النسخ الاحتياطي الشامل
+    const handleDownloadBackup = () => {
+        const backupData = {
+            exportDate: new Date().toISOString(),
+            users,
+            products,
+            orders,
+            customers,
+            salesReps
+        };
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `backup_royal_perfumes_${new Date().toLocaleDateString('ar-EG').replace(/\//g, '-')}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        alert('تم تحميل نسخة احتياطية شاملة لبياناتك بنجاح ✅');
+    };
     
     const handleUpdateUser = async (updatedUser: User) => {
         const { error } = await supabase
@@ -121,7 +143,6 @@ const Dashboard: React.FC<DashboardProps> = ({
               throw new Error("Could not find the sales representative for this order. A valid sales rep is required.");
           }
   
-          // Use snake_case for the payload to match the database columns
           const dbPayload = {
               customer_name: orderData.customerName,
               customer_phone: orderData.customerPhone,
@@ -155,20 +176,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                   .single();
           }
           
-          const { data, error } = result;
-  
-          if (error) {
-              // The error from Supabase now includes the RLS failure message
-              throw new Error(error.message || 'An unknown error occurred');
-          }
+          const { error } = result;
+          if (error) throw new Error(error.message);
           
           await refreshData();
           setShowOrderForm(null);
           alert('تم حفظ الفاتورة بنجاح ✅');
   
       } catch (error: any) {
-          console.error('Error saving order:', error);
-          // Display the specific error message from Supabase or the catch block
           alert(`فشل حفظ الفاتورة: ${error.message}`);
       }
   };
@@ -209,15 +224,19 @@ const Dashboard: React.FC<DashboardProps> = ({
             
             <main className="flex-1 overflow-y-auto p-10 relative">
                  <header className="flex justify-between items-center mb-12 no-print">
-                    <div><h2 className="text-4xl font-black text-gray-900">{getPageTitle()}</h2></div>
+                    <div>
+                        <h2 className="text-4xl font-black text-gray-900">{getPageTitle()}</h2>
+                        <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-tighter">نظام مؤسسة العطور الملكية - إدارة المخازن</p>
+                    </div>
                     <div className="flex gap-4">
+                        <button onClick={handleDownloadBackup} className="p-4 bg-white rounded-2xl shadow-sm border border-emerald-100 text-emerald-600 hover:bg-emerald-50 transition-all flex items-center gap-2" title="تحميل نسخة احتياطية للبيانات">
+                            <Download className="w-5 h-5" />
+                            <span className="text-xs font-black">باك أب</span>
+                        </button>
                         <button onClick={() => setShowChat(!showChat)} className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 text-emerald-600 hover:bg-emerald-50 transition-all relative">
                             <MessageSquare />
                         </button>
-                        {currentUser.role === 'sales' && (
-                            <button onClick={() => setShowOrderForm('new')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black shadow-2xl flex items-center gap-3 hover:scale-105 transition-all"><PlusCircle/> فاتورة جديدة</button>
-                        )}
-                        {(currentUser.role === 'admin' || currentUser.role === 'supervisor') && (
+                        {(currentUser.role === 'admin' || currentUser.role === 'supervisor' || currentUser.role === 'sales') && (
                             <button onClick={() => setShowOrderForm('new')} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black shadow-2xl flex items-center gap-3 hover:scale-105 transition-all"><PlusCircle/> فاتورة جديدة</button>
                         )}
                     </div>
@@ -244,5 +263,3 @@ const Dashboard: React.FC<DashboardProps> = ({
 }
 
 export default Dashboard;
-
-    
