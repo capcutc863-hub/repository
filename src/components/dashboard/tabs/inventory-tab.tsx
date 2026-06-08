@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useMemo, useState } from 'react';
 import type { Product, User } from '@/lib/types';
@@ -19,6 +20,12 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ currentUser, products, onEd
         return products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
     }, [products, search]);
 
+    const formatAmount = (val: number) => {
+        return (val / 100).toLocaleString('en-US', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+        });
+    };
 
     return (
         <div className="space-y-10 animate-in fade-in">
@@ -50,7 +57,7 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ currentUser, products, onEd
                                     <p className="text-[10px] text-gray-400 font-bold uppercase">STOCK_ID: {p.id}</p>
                                 </td>
                                 <td className="p-8 font-bold text-emerald-600">{p.grade}</td>
-                                <td className="p-8 text-center font-black text-emerald-900">{p.pricePerMg} ج.م</td>
+                                <td className="p-8 text-center font-black text-emerald-900">{formatAmount(p.pricePerMg)} ج.م</td>
                                 <td className="p-8 text-center">
                                     <div className="flex flex-col items-center">
                                         <span className={`font-black ${p.stock < 1000 ? 'text-red-600 animate-pulse' : 'text-gray-900'}`}>{p.stock.toLocaleString()} mg</span>
@@ -72,5 +79,3 @@ const InventoryTab: React.FC<InventoryTabProps> = ({ currentUser, products, onEd
 };
 
 export default InventoryTab;
-
-    

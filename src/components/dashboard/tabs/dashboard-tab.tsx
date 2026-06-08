@@ -16,14 +16,12 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ currentUser, salesReps = []
         const isAdminView = currentUser?.role === 'admin' || currentUser?.role === 'supervisor';
         const currentRep = salesReps.find(r => r.userId === currentUser?.id);
         
-        // Safety check for totals and history
         const totalSales = orders.filter(o => o.status === 'تم التسليم').reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
         const pendingOrdersCount = orders.filter(o => o.status === 'قيد التنفيذ').length;
 
         const totalCommissions = salesReps.reduce((sum, r) => sum + (Number(r.totalCommission) || 0), 0);
         const pendingCommissions = salesReps.reduce((sum, r) => sum + (Number(r.pendingCommission) || 0), 0);
 
-        // For sales rep view
         const myTotalSales = orders.filter(o => o.salesRepId === currentRep?.id && o.status === 'تم التسليم').reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
         const myPendingOrders = orders.filter(o => o.salesRepId === currentRep?.id && o.status === 'قيد التنفيذ').length;
         
@@ -39,9 +37,10 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ currentUser, salesReps = []
         };
     }, [orders, salesReps, currentUser]);
 
+    // دالة التنسيق المالية: تقسم على 100 وتظهر خانتين عشريتين
     const formatAmount = (val: number) => {
-        return val.toLocaleString('en-US', { 
-            minimumFractionDigits: 0, 
+        return (val / 100).toLocaleString('en-US', { 
+            minimumFractionDigits: 2, 
             maximumFractionDigits: 2 
         });
     };
@@ -81,19 +80,18 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ currentUser, salesReps = []
                                     <p className="font-black text-emerald-950 group-hover:text-emerald-700 transition-colors">{o.customerName || 'عميل مجهول'}</p>
                                     <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">#{o.id.toString().substring(0,6)} • {formatAmount(Number(o.totalAmount))} ج.م</p>
                                 </div>
-                                <span className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-tighter ${o.status === 'تم التسليم' ? 'bg-green-100 text-green-700 shadow-sm' : o.status === 'ملغي' || o.status === 'مرتجع' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700 shadow-sm'}`}>{o.status}</span>
+                                <span className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-tighter ${o.status === 'تم التسليم' ? 'bg-green-100 text-green-700' : o.status === 'ملغي' || o.status === 'مرتجع' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{o.status}</span>
                             </div>
                         ))}
-                        {(!orders || orders.length === 0) && <p className="text-center py-12 text-gray-300 font-bold italic">لا توجد فواتير مسجلة في المخزن حالياً</p>}
                     </div>
                 </div>
                 
                 <div className="bg-white p-10 rounded-[3rem] border border-gray-100 shadow-sm">
-                    <h3 className="text-xl font-black mb-8 flex items-center gap-4"><div className="w-2.5 h-10 bg-indigo-600 rounded-full"></div> المتصدرون (العمولات المكتسبة)</h3>
+                    <h3 className="text-xl font-black mb-8 flex items-center gap-4"><div className="w-2.5 h-10 bg-indigo-600 rounded-full"></div> المتصدرون (العمولات)</h3>
                     <div className="space-y-8">
                         {[...(salesReps || [])].sort((a,b) => (b.totalCommission || 0) - (a.totalCommission || 0)).slice(0, 5).map((r, idx) => (
                             <div key={r.id} className="flex items-center gap-5">
-                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm ${idx === 0 ? 'bg-amber-100 text-amber-700 border-2 border-amber-200' : 'bg-indigo-50 text-indigo-600'}`}>
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm ${idx === 0 ? 'bg-amber-100 text-amber-700' : 'bg-indigo-50 text-indigo-600'}`}>
                                     {idx === 0 ? '🏆' : (r.name || 'U')[0]}
                                 </div>
                                 <div className="flex-1">
@@ -107,7 +105,6 @@ const DashboardTab: React.FC<DashboardTabProps> = ({ currentUser, salesReps = []
                                 </div>
                             </div>
                         ))}
-                        {(!salesReps || salesReps.length === 0) && <p className="text-center py-12 text-gray-300 font-bold italic">لا يوجد مناديب مسجلين بعد</p>}
                     </div>
                 </div>
             </div>

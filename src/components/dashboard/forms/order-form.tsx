@@ -18,14 +18,14 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
 
     const isEditing = typeof order === 'object';
     
-    // Form state
+    // Form state - كل القيم هنا جنيه (بكسورها) ويتم تحويلها عند الحفظ
     const [customerName, setCustomerName] = useState(isEditing ? order.customerName : '');
     const [customerPhone, setCustomerPhone] = useState(isEditing ? order.customerPhone : '');
     const [customerAddress, setCustomerAddress] = useState(isEditing ? order.customerAddress : '');
     const [customerNotes, setCustomerNotes] = useState(isEditing ? order.customerNotes || '' : '');
-    const [shipping, setShipping] = useState<number>(isEditing ? order.shippingCost : 0);
+    const [shipping, setShipping] = useState<number>(isEditing ? order.shippingCost / 100 : 0);
     const [discount, setDiscount] = useState<number>(isEditing ? order.discountPercentage : 0);
-    const [cart, setCart] = useState<OrderItem[]>(isEditing ? [...order.items] : []);
+    const [cart, setCart] = useState<OrderItem[]>(isEditing ? order.items.map(i => ({...i, price: i.price / 100})) : []);
     
     const defaultRepId = currentRep?.id || (salesReps.length > 0 ? salesReps[0].id : '');
     const [selectedRepId, setSelectedRepId] = useState(isEditing ? order.salesRepId : defaultRepId);
@@ -43,8 +43,7 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
     const effectiveRep = salesReps.find(r => r.id === effectiveRepId);
     const commissionRate = effectiveRep?.customCommissionRate || 0.05;
     
-    // نقوم بتقريب العمولة لأقرب خانتين عشريتين (قروش)
-    const estimatedCommission = Math.round((netTotal * commissionRate) * 100) / 100;
+    const estimatedCommission = netTotal * commissionRate;
     
     const handleConfirmOrder = () => {
         if (!customerName || cart.length === 0 || !currentUser) {
@@ -65,16 +64,17 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
     
         const totalAmount = netTotal + Number(shipping);
         
+        // تحويل كل شيء للقروش قبل الحفظ
         const orderData: Omit<Order, 'id' | 'createdAt' | 'salesRepName'> = {
             customerName, customerPhone, customerAddress, customerNotes,
-            items: [...cart],
-            subtotal,
+            items: cart.map(i => ({...i, price: Math.round(i.price * 100)})),
+            subtotal: Math.round(subtotal * 100),
             discountPercentage: discount,
-            discountAmount,
-            shippingCost: Number(shipping),
-            totalAmount,
+            discountAmount: Math.round(discountAmount * 100),
+            shippingCost: Math.round(Number(shipping) * 100),
+            totalAmount: Math.round(totalAmount * 100),
             status: isEditing ? (order as Order).status : 'قيد التنفيذ',
-            commission: estimatedCommission,
+            commission: Math.round(estimatedCommission * 100),
             salesRepId: effectiveRepId,
         };
         
@@ -83,7 +83,7 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
 
     const formatAmount = (val: number) => {
         return val.toLocaleString('en-US', { 
-            minimumFractionDigits: 0, 
+            minimumFractionDigits: 2, 
             maximumFractionDigits: 2 
         });
     };
@@ -110,9 +110,8 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                         )}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="اسم العميل الرباعي..." className="p-5 bg-white rounded-2xl font-bold shadow-sm outline-none border-2 border-transparent focus:border-emerald-500 transition-all" />
-                            <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="رقم الهاتف (للمتابعة)..." className="p-5 bg-white rounded-2xl font-bold shadow-sm outline-none border-2 border-transparent focus:border-emerald-500 transition-all text-left" />
-                            <input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="عنوان التوصيل بالتفصيل..." className="col-span-2 p-5 bg-white rounded-2xl font-bold shadow-sm outline-none border-2 border-transparent focus:border-emerald-500 transition-all" />
-                            <textarea value={customerNotes} onChange={(e) => setCustomerNotes(e.target.value)} placeholder="ملاحظات إضافية (اختياري)..." className="col-span-2 p-5 bg-white rounded-2xl font-bold shadow-sm outline-none border-2 border-transparent focus:border-emerald-500 transition-all" rows={2}/>
+                            <input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} placeholder="رقم الهاتف..." className="p-5 bg-white rounded-2xl font-bold shadow-sm outline-none border-2 border-transparent focus:border-emerald-500 transition-all text-left" />
+                            <input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder="عنوان التوصيل..." className="col-span-2 p-5 bg-white rounded-2xl font-bold shadow-sm outline-none border-2 border-transparent focus:border-emerald-500 transition-all" />
                         </div>
                     </div>
 
@@ -120,7 +119,7 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                             <div className="relative col-span-1 lg:col-span-2">
                                 <p className="text-[10px] font-black text-emerald-600 mr-2 mb-1 uppercase">ابحث عن زيت خام</p>
-                                <input list="prods" value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} placeholder="مثال: عطر ملكي، مسك..." className="w-full p-4 bg-white rounded-xl outline-none font-bold shadow-sm border-2 border-emerald-100 focus:border-emerald-500 transition-all"/>
+                                <input list="prods" value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} placeholder="مثال: عطر ملكي..." className="w-full p-4 bg-white rounded-xl outline-none font-bold shadow-sm border-2 border-emerald-100 focus:border-emerald-500 transition-all"/>
                                 <datalist id="prods">{products.map(p => <option key={p.id} value={p.name}>{p.grade}</option>)}</datalist>
                             </div>
                             <div className="space-y-1">
@@ -128,8 +127,8 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                                 <input type="number" value={itemQty} onChange={(e) => setItemQty(e.target.value)} placeholder="0" className="w-full p-4 bg-white rounded-xl font-bold outline-none text-left shadow-sm border-2 border-emerald-100 focus:border-emerald-500 transition-all"/>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-black text-emerald-600 mr-2 mb-1 uppercase">السعر</p>
-                                <input type="number" value={itemPrice} onChange={(e) => setItemPrice(e.target.value)} placeholder="0" className="w-full p-4 bg-white rounded-xl font-bold outline-none text-left shadow-sm border-2 border-emerald-100 focus:border-emerald-500 transition-all"/>
+                                <p className="text-[10px] font-black text-emerald-600 mr-2 mb-1 uppercase">السعر للوحدة</p>
+                                <input type="number" value={itemPrice} onChange={(e) => setItemPrice(e.target.value)} placeholder="0.00" className="w-full p-4 bg-white rounded-xl font-bold outline-none text-left shadow-sm border-2 border-emerald-100 focus:border-emerald-500 transition-all"/>
                             </div>
                         </div>
                         <button onClick={() => {
@@ -156,7 +155,6 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                 </div>
 
                 <div className="w-full md:w-[480px] bg-[#064E3B] p-12 text-white flex flex-col relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
                     <h4 className="text-2xl font-black mb-10 flex items-center gap-4 relative z-10"><ShoppingCart className="text-emerald-400 w-8 h-8"/> مراجعة السلة النهائية</h4>
                     
                     <div className="flex-1 overflow-y-auto space-y-4 mb-8 pr-2 custom-scrollbar-dark relative z-10">
@@ -169,7 +167,6 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                                 <button onClick={() => setCart(cart.filter((_, i) => i !== idx))} className="text-red-400 p-3 hover:bg-red-500/20 rounded-xl transition-all"><Trash2 className="w-5 h-5"/></button>
                             </div>
                         ))}
-                        {cart.length === 0 && <div className="h-full flex flex-col items-center justify-center opacity-20"><ShoppingCart className="w-20 h-20 mb-4"/><p className="font-black">السلة فارغة حالياً</p></div>}
                     </div>
                     
                     <div className="bg-black/20 p-8 rounded-[2.5rem] border border-white/10 mb-8 space-y-4 relative z-10">
@@ -179,16 +176,13 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                         </div>
                         <div className="flex justify-between items-center text-sm border-t border-white/5 pt-4">
                             <span className="text-indigo-400 font-black flex items-center gap-2"><Percent className="w-4 h-4"/> عمولة المندوب ({Math.round(commissionRate * 100)}%):</span>
-                            <div className="text-left">
-                                <span className="font-black text-indigo-300 text-xl">{formatAmount(estimatedCommission)}</span>
-                                <span className="text-[10px] font-bold mr-1">ج.م</span>
-                            </div>
+                            <span className="font-black text-indigo-300 text-xl">{formatAmount(estimatedCommission)} ج.م</span>
                         </div>
                     </div>
 
                     <div className="pt-8 border-t border-white/10 space-y-4 mb-10 relative z-10">
                         <div className="flex justify-between items-center">
-                            <span className="text-lg font-black text-emerald-100/50 uppercase tracking-widest">الإجمالي النهائي للتحصيل</span>
+                            <span className="text-lg font-black text-emerald-100/50 uppercase tracking-widest">الإجمالي النهائي</span>
                             <div className="text-left">
                                 <span className="text-5xl font-black text-emerald-400 leading-none">
                                     {formatAmount(netTotal + Number(shipping))}
@@ -198,7 +192,7 @@ export function OrderForm({ order, onClose, currentUser, currentRep, salesReps, 
                         </div>
                     </div>
                     
-                    <button onClick={handleConfirmOrder} className="w-full py-6 bg-emerald-500 text-emerald-950 rounded-[2rem] font-black text-2xl hover:bg-emerald-400 shadow-2xl transition-all shadow-emerald-500/20 flex items-center justify-center gap-4 relative z-10 active:scale-95">
+                    <button onClick={handleConfirmOrder} className="w-full py-6 bg-emerald-500 text-emerald-950 rounded-[2rem] font-black text-2xl hover:bg-emerald-400 shadow-2xl transition-all flex items-center justify-center gap-4 relative z-10 active:scale-95">
                         <Check className="w-8 h-8"/> تأكيد الفاتورة
                     </button>
                 </div>

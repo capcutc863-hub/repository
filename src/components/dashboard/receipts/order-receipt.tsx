@@ -19,7 +19,10 @@ export const OrderReceipt: React.FC<OrderReceiptProps> = ({ order }) => {
     };
 
     const formatCurrency = (amount: number) => {
-        return amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+        return (amount / 100).toLocaleString('en-US', { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+        });
     };
 
     return (
@@ -49,11 +52,6 @@ export const OrderReceipt: React.FC<OrderReceiptProps> = ({ order }) => {
                         <p className="text-base font-black text-gray-900">{order.customerName}</p>
                         <p className="text-sm font-bold text-gray-500">{order.customerPhone}</p>
                         <p className="text-sm font-bold text-gray-500">{order.customerAddress}</p>
-                        {order.customerNotes && (
-                            <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-100 italic text-xs text-amber-800">
-                                <span className="font-black">ملاحظات:</span> {order.customerNotes}
-                            </div>
-                        )}
                     </div>
                 </div>
                 <div className="space-y-4">
@@ -61,7 +59,6 @@ export const OrderReceipt: React.FC<OrderReceiptProps> = ({ order }) => {
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm"><span className="text-gray-400 font-bold uppercase">تاريخ الإصدار:</span><span className="font-black">{formatDate(order.createdAt)}</span></div>
                         <div className="flex justify-between text-sm"><span className="text-gray-400 font-bold uppercase">المندوب المسؤول:</span><span className="font-black">{order.salesRepName}</span></div>
-                        <div className="flex justify-between text-sm"><span className="text-gray-400 font-bold uppercase">حالة الطلب:</span><span className="font-black text-emerald-600">{order.status}</span></div>
                     </div>
                 </div>
             </div>
@@ -95,7 +92,7 @@ export const OrderReceipt: React.FC<OrderReceiptProps> = ({ order }) => {
                     <div className="flex justify-between text-sm px-4"><span className="text-gray-400 font-black uppercase">المجموع الفرعي</span><span className="font-black text-gray-800">{formatCurrency(order.subtotal)} ج.م</span></div>
                     <div className="flex justify-between text-sm px-4"><span className="text-gray-400 font-black uppercase">الخصم المطبق ({order.discountPercentage}%)</span><span className="font-black text-red-500">-{formatCurrency(order.discountAmount)} ج.م</span></div>
                     <div className="flex justify-between text-sm px-4 border-b-2 border-gray-50 pb-6"><span className="text-gray-400 font-black uppercase">مصاريف الشحن</span><span className="font-black text-gray-800">{formatCurrency(order.shippingCost)} ج.م</span></div>
-                    <div className="flex justify-between items-center bg-emerald-600 p-6 rounded-[2rem] text-white shadow-2xl shadow-emerald-600/20">
+                    <div className="flex justify-between items-center bg-emerald-600 p-6 rounded-[2rem] text-white shadow-2xl">
                         <span className="text-xl font-black uppercase tracking-tighter">الإجمالي النهائي</span>
                         <div className="text-left">
                             <span className="text-3xl font-black">{formatCurrency(order.totalAmount)}</span>

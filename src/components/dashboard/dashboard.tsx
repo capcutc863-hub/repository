@@ -77,9 +77,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         [salesReps, currentUser]
     );
 
+    // دالة التنسيق المالية: تقسم على 100 وتظهر خانتين عشريتين
     const formatAmount = (val: number) => {
-        return val.toLocaleString('en-US', { 
-            minimumFractionDigits: 0, 
+        return (val / 100).toLocaleString('en-US', { 
+            minimumFractionDigits: 2, 
             maximumFractionDigits: 2 
         });
     };
@@ -132,19 +133,20 @@ const Dashboard: React.FC<DashboardProps> = ({
                 throw new Error("لم يتم العثور على المندوب المحدد.");
             }
     
+            // البيانات مخزنة أصلاً كأرقام صحيحة (قروش) من الـ Form
             const dbPayload = {
                 customer_name: orderData.customerName,
                 customer_phone: orderData.customerPhone,
                 customer_address: orderData.customerAddress,
                 customer_notes: orderData.customerNotes || null,
                 items: orderData.items || [],
-                subtotal: Number(orderData.subtotal || 0),
+                subtotal: Math.round(orderData.subtotal),
                 discount_percentage: Number(orderData.discountPercentage || 0),
-                discount_amount: Number(orderData.discountAmount || 0),
-                shipping_cost: Number(orderData.shippingCost || 0),
-                total_amount: Number(orderData.totalAmount || 0),
+                discount_amount: Math.round(orderData.discountAmount || 0),
+                shipping_cost: Math.round(orderData.shippingCost || 0),
+                total_amount: Math.round(orderData.totalAmount || 0),
                 status: orderData.status || 'قيد التنفيذ',
-                commission: Number(orderData.commission || 0),
+                commission: Math.round(orderData.commission || 0),
                 sales_rep_id: effectiveRepId,
                 sales_rep_name: repForOrder.name,
             };
@@ -163,7 +165,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             const { data: existingCustomer } = await supabase.from('customers').select('*').eq('phone', orderData.customerPhone).maybeSingle();
             if (existingCustomer) {
                 await supabase.from('customers').update({
-                    total_spent: Number(existingCustomer.total_spent || 0) + Number(orderData.totalAmount),
+                    total_spent: Math.round(Number(existingCustomer.total_spent || 0) + Number(orderData.totalAmount)),
                     last_order_date: new Date().toISOString(),
                     address: orderData.customerAddress
                 }).eq('id', existingCustomer.id);
@@ -172,7 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     name: orderData.customerName,
                     phone: orderData.customerPhone,
                     address: orderData.customerAddress,
-                    total_spent: orderData.totalAmount,
+                    total_spent: Math.round(orderData.totalAmount),
                     last_order_date: new Date().toISOString(),
                     classification: 'عادي'
                 });
@@ -181,15 +183,14 @@ const Dashboard: React.FC<DashboardProps> = ({
             // 2. تحديث عمولة المندوب (المعلقة)
             if (!isEditing && orderData.status === 'قيد التنفيذ') {
                 await supabase.from('sales_reps').update({
-                    pending_commission: Number(repForOrder.pending_commission || 0) + Number(orderData.commission),
+                    pending_commission: Math.round(Number(repForOrder.pending_commission || 0) + Number(orderData.commission)),
                     orders_count: Number(repForOrder.orders_count || 0) + 1
                 }).eq('id', effectiveRepId);
             }
             
-            await refreshData();
+            refreshData();
             setShowOrderForm(null);
             
-            // 3. إظهار معاينة الفاتورة فوراً للطباعة
             if (savedOrder) {
                 setSelectedOrderForPrint({
                     ...orderData,
@@ -302,7 +303,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             {showProfileEdit && <ProfileEditForm user={currentUser} onClose={() => setShowProfileEdit(false)} onUpdate={handleUpdateUser} />}
             {showChat && <ChatWindow currentUser={currentUser} users={users} onClose={() => setShowChat(false)} />}
 
-            {/* Receipt Preview Modal - يظهر تلقائياً بعد الحفظ */}
+            {/* Receipt Preview Modal */}
             {selectedOrderForPrint && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[1000] p-4 animate-in fade-in">
                     <div className="bg-white rounded-[3rem] p-10 shadow-2xl w-full max-w-4xl relative animate-in zoom-in overflow-hidden">

@@ -25,8 +25,8 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, salesRep
     const [exporting, setExporting] = useState(false);
 
     const formatAmount = (val: number) => {
-        return val.toLocaleString('en-US', { 
-            minimumFractionDigits: 0, 
+        return (val / 100).toLocaleString('en-US', { 
+            minimumFractionDigits: 2, 
             maximumFractionDigits: 2 
         });
     };
@@ -57,20 +57,19 @@ const OrdersTab: React.FC<OrdersTabProps> = ({ currentUser, currentRep, salesRep
             const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', order.id);
             if (error) throw error;
 
-            // تحديث العمولات في حال التسليم
             if (newStatus === 'تم التسليم' && oldStatus === 'قيد التنفيذ') {
                 const rep = salesReps.find(r => r.id === order.salesRepId);
                 if (rep) {
                     await supabase.from('sales_reps').update({
-                        total_commission: Number(rep.total_commission || 0) + Number(order.commission),
-                        pending_commission: Math.max(0, Number(rep.pending_commission || 0) - Number(order.commission))
+                        total_commission: Math.round(Number(rep.total_commission || 0) + Number(order.commission)),
+                        pending_commission: Math.max(0, Math.round(Number(rep.pending_commission || 0) - Number(order.commission)))
                     }).eq('id', rep.id);
                 }
             } else if (newStatus === 'ملغي' && oldStatus === 'قيد التنفيذ') {
                 const rep = salesReps.find(r => r.id === order.salesRepId);
                 if (rep) {
                     await supabase.from('sales_reps').update({
-                        pending_commission: Math.max(0, Number(rep.pending_commission || 0) - Number(order.commission))
+                        pending_commission: Math.max(0, Math.round(Number(rep.pending_commission || 0) - Number(order.commission)))
                     }).eq('id', rep.id);
                 }
             }
